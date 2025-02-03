@@ -20,7 +20,7 @@ internal static class MCMSettings
         }
     }
 
-    public static ISettingsBuilder AddSettings(SaveCleanerOptions opt, string id)
+    public static ISettingsBuilder AddSettings(string id)
     {
         ModPresetBuilder modPresetBuilder = new();
 

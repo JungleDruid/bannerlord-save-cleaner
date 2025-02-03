@@ -1,6 +1,8 @@
 using HarmonyLib;
 using SandBox.View.Map;
 
+// ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedType.Global
 // ReSharper disable InconsistentNaming
 
 namespace SaveCleaner;

@@ -20,7 +20,7 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
     public event ObjectPredicateDelegate Removable;
     public event ObjectPredicateDelegate Essential;
     public event WipeDelegate OnWipe;
-    
+
     internal bool CanWipe => OnWipe != null;
 
     public bool Disabled { get; internal set; }

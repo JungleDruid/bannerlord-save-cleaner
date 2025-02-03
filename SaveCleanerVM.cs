@@ -1,6 +1,8 @@
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 
+// ReSharper disable UnusedMember.Global
+
 namespace SaveCleaner;
 
 public class SaveCleanerVM : ViewModel
@@ -12,17 +14,12 @@ public class SaveCleanerVM : ViewModel
     [DataSourceProperty]
     public bool IsActive
     {
-        get
-        {
-            return _isActive;
-        }
+        get => _isActive;
         set
         {
-            if (value != _isActive)
-            {
-                _isActive = value;
-                OnPropertyChangedWithValue(value);
-            }
+            if (value == _isActive) return;
+            _isActive = value;
+            OnPropertyChangedWithValue(value);
         }
     }
 

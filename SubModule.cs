@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Reflection;
 using Bannerlord.ButterLib.Common.Extensions;
 using HarmonyLib;
@@ -12,7 +11,6 @@ using Microsoft.Extensions.Logging;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
-using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.MountAndBlade;
@@ -32,7 +30,6 @@ public class SubModule : MBSubModuleBase
     private CleanerMapView CleanerMapView { get; set; }
     [CanBeNull] private FluentPerCampaignSettings _settings;
     private bool _startPressed;
-    internal SaveCleanerOptions Options { get; private set; }
     internal static Dictionary<Type, SaveCleanerAddon> Addons { get; } = [];
     private SaveCleanerAddon _wipeAddon;
     private bool CanCleanUp => MapScreen.Instance?.IsActive == true && CleanerMapView is not null && !CleanerMapView.IsFinalized;
@@ -153,14 +150,13 @@ public class SubModule : MBSubModuleBase
     protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
     {
         Campaign.Current.AddCampaignEventReceiver(SaveEventReceiver);
-        Options ??= new SaveCleanerOptions();
     }
 
     public override void OnAfterGameInitializationFinished(Game game, object starterObject)
     {
         if (game.GameType is not Campaign campaign) return;
         _settings?.Unregister();
-        ISettingsBuilder builder = MCMSettings.AddSettings(Options, campaign.UniqueGameId);
+        ISettingsBuilder builder = MCMSettings.AddSettings(campaign.UniqueGameId);
         _settings = builder.SetOnPropertyChanged(OnPropertyChanged).BuildAsPerCampaign();
         _settings?.Register();
     }
@@ -207,7 +203,6 @@ public class SubModule : MBSubModuleBase
 
     private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
     {
-        Options.Version += 1;
     }
 
     public void OnMapScreenInit(MapScreen mapScreen)
