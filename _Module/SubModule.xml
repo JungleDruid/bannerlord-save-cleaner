@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Module>
+  <Name value="SaveCleaner" />
+  <Id value="SaveCleaner" />
+  <Version value="v1.0.0" />
+  <Official value="false" />
+  <DefaultModule value="false" />
+  <SingleplayerModule value="true" />
+  <MultiplayerModule value="false" />
+  <DependedModules>
+    <DependedModule Id="Native"/>
+    <DependedModule Id="SandBoxCore"/>
+    <DependedModule Id="Sandbox"/>
+    <DependedModule Id="CustomBattle"/>
+    <DependedModule Id="StoryMode"/>
+    <DependedModule Id="Bannerlord.ButterLib"/>
+    <DependedModule Id="Bannerlord.MBOptionScreen"/>
+  </DependedModules>
+  <SubModules>
+    <SubModule>
+      <Name value="SaveCleaner" />
+      <DLLName value="SaveCleaner.dll" />
+      <SubModuleClassType value="SaveCleaner.SubModule" />
+      <Tags />
+    </SubModule>
+  </SubModules>
+  <Xmls>
+    <XmlNode>
+      <XmlName id="NPCCharacters" path="lords"/>
+      <IncludedGameTypes>
+        <GameType value = "Campaign"/>
+        <GameType value = "CampaignStoryMode"/>
+      </IncludedGameTypes>
+    </XmlNode>
+  </Xmls>
+</Module>

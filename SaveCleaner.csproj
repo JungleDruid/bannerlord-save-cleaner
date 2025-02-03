@@ -1,0 +1,92 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Version>1.0.0</Version>
+        <TargetFramework>net48</TargetFramework>
+        <Nullable>disable</Nullable>
+        <BaseOutputPath>$(BANNERLORD_GAME_DIR)/Modules/$(MSBuildProjectName)/bin/Win64_Shipping_Client/</BaseOutputPath>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <LangVersion>default</LangVersion>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <PlatformTarget>x64</PlatformTarget>
+        <DebugType>full</DebugType>
+        <OutputPath>$(BANNERLORD_GAME_DIR)/Modules/$(MSBuildProjectName)/bin/Win64_Shipping_Client/</OutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <PlatformTarget>x64</PlatformTarget>
+        <DebugSymbols>true</DebugSymbols>
+        <OutputPath>$(BANNERLORD_GAME_DIR)/Modules/$(MSBuildProjectName)/bin/Win64_Shipping_Client/</OutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Reference Include="$(BANNERLORD_GAME_DIR)\bin\Win64_Shipping_Client\TaleWorlds.*.dll" Exclude="$(BANNERLORD_GAME_DIR)\bin\Win64_Shipping_Client\TaleWorlds.Native.dll">
+            <HintPath>%(Identity)</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="$(BANNERLORD_GAME_DIR)\Modules\Native\bin\Win64_Shipping_Client\*.dll">
+            <HintPath>%(Identity)</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="$(BANNERLORD_GAME_DIR)\Modules\SandBox\bin\Win64_Shipping_Client\*.dll">
+            <HintPath>%(Identity)</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="$(BANNERLORD_GAME_DIR)\Modules\SandBoxCore\bin\Win64_Shipping_Client\*.dll">
+            <HintPath>%(Identity)</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="$(BANNERLORD_GAME_DIR)\Modules\StoryMode\bin\Win64_Shipping_Client\*.dll">
+            <HintPath>%(Identity)</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" IncludeAssets="compile" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Bannerlord.ButterLib" Version="2.9.18">
+            <PrivateAssets>all</PrivateAssets>
+            <ExcludeAssets>runtime</ExcludeAssets>
+            <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Bannerlord.MCM" Version="5.10.2">
+            <PrivateAssets>all</PrivateAssets>
+            <ExcludeAssets>runtime</ExcludeAssets>
+            <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Bannerlord.UIExtenderEx" Version="2.12.0">
+            <PrivateAssets>all</PrivateAssets>
+            <ExcludeAssets>runtime</ExcludeAssets>
+            <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Lib.Harmony" Version="2.3.3">
+            <PrivateAssets>all</PrivateAssets>
+            <ExcludeAssets>runtime</ExcludeAssets>
+            <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="global.json" />
+        <None Remove="bin\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Remove="bin\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Remove="bin\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="_Module\" />
+    </ItemGroup>
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="xcopy /e /y $(ProjectDir)_Module\ &quot;$(BANNERLORD_GAME_DIR)\Modules\$(MSBuildProjectName)&quot;" />
+    </Target>
+</Project>
