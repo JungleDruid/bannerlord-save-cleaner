@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 using Bannerlord.ButterLib.Common.Extensions;
 using HarmonyLib;
@@ -14,6 +14,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
+using TaleWorlds.LinQuick;
 using TaleWorlds.MountAndBlade;
 
 namespace SaveCleaner;
@@ -32,6 +33,10 @@ public class SubModule : MBSubModuleBase
     [CanBeNull] private FluentPerCampaignSettings _settings;
     private bool _startPressed;
     internal SaveCleanerOptions Options { get; private set; }
+    internal static Dictionary<Type, SaveCleanerAddon> Addons { get; } = [];
+    private SaveCleanerAddon _wipeAddon;
+    private bool CanCleanUp => MapScreen.Instance?.IsActive == true && CleanerMapView is not null && !CleanerMapView.IsFinalized;
+
 
     private void OnServiceRegistration()
     {
@@ -43,8 +48,16 @@ public class SubModule : MBSubModuleBase
         Instance = this;
         OnServiceRegistration();
         Harmony.PatchAll(Assembly.GetExecutingAssembly());
-        CleanConditions.AddRemovable<SubModule>(Removable);
-        CleanConditions.AddEssential<SubModule>(ForceKeep);
+        AddDefaultAddon();
+    }
+
+    private static void AddDefaultAddon()
+    {
+        var addon = new SaveCleanerAddon(Harmony.Id, Name,
+            new SaveCleanerAddon.BoolSetting(Settings.RemoveDisappearedHeroes, "Remove Disappeared Heroes",
+                "Remove disappeared heroes that are likely spawned by mods.", 0, true));
+        addon.Removable += Removable;
+        addon.Register<SubModule>();
     }
 
     protected override void OnBeforeInitialModuleScreenSetAsRoot()
@@ -75,6 +88,10 @@ public class SubModule : MBSubModuleBase
         {
             if (!TryStartCleanUp()) return;
         }
+        else if (_wipeAddon is not null)
+        {
+            if (!TryStartWipe()) return;
+        }
 
         if (_cleaner is null) return;
         if (_cleaner.Completed)
@@ -86,10 +103,50 @@ public class SubModule : MBSubModuleBase
 
     private bool TryStartCleanUp()
     {
-        var mapScreen = MapScreen.Instance;
-        if (mapScreen is null || mapScreen.IsActive != true || CleanerMapView is null || CleanerMapView.IsFinalized) return false;
-        _cleaner ??= new Cleaner(CleanerMapView, Options).Start();
+        if (!Addons.Values.AnyQ(a => !a.Disabled))
+        {
+            InformationManager.ShowInquiry(new InquiryData(
+                "Error", "No available addon.", true, false,
+                "OK", null, () => _startPressed = false, () => { }));
+            return false;
+        }
+
+        if (!CanCleanUp) return false;
+
         _startPressed = false;
+
+        Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+        InformationManager.ShowInquiry(new InquiryData(
+            "Confirm Clean Up", "Start the clean up progress now?", true, true,
+            "Yes", "No",
+            () => _cleaner ??= new Cleaner(CleanerMapView, Addons.Values.ToListQ()).Start(),
+            () => { }));
+
+        return true;
+    }
+
+    private bool TryStartWipe()
+    {
+        if (_wipeAddon.Disabled)
+        {
+            InformationManager.ShowInquiry(new InquiryData(
+                "Error", "Wipe target is disabled.", true, false,
+                "OK", null, () => _startPressed = false, () => { }));
+            return false;
+        }
+
+        if (!CanCleanUp) return false;
+
+        SaveCleanerAddon addon = _wipeAddon;
+        _wipeAddon = null;
+
+        Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+        InformationManager.ShowInquiry(new InquiryData(
+            $"Confirm Wipe {addon.Name}", "Start the wipe progress now?", true, true,
+            "Yes", "No",
+            () => _cleaner ??= new Cleaner(CleanerMapView, Addons.Values.ToListQ(), addon).Start(),
+            () => { }));
+
         return true;
     }
 
@@ -103,16 +160,17 @@ public class SubModule : MBSubModuleBase
     {
         if (game.GameType is not Campaign campaign) return;
         _settings?.Unregister();
-        ISettingsBuilder builder = SaveCleanerSettings.AddSettings(Options, campaign.UniqueGameId);
+        ISettingsBuilder builder = MCMSettings.AddSettings(Options, campaign.UniqueGameId);
         _settings = builder.SetOnPropertyChanged(OnPropertyChanged).BuildAsPerCampaign();
         _settings?.Register();
     }
 
-    private bool Removable(object obj)
+    private static bool Removable(SaveCleanerAddon addon, object o)
     {
-        if (obj is Hero hero)
+        if (o is Hero hero)
         {
-            return hero is { IsActive: false, PartyBelongedTo: null, CurrentSettlement: null } &&
+            return addon.GetValue<bool>(Settings.RemoveDisappearedHeroes) &&
+                   hero is { IsActive: false, PartyBelongedTo: null, CurrentSettlement: null } &&
                    !Hero.AllAliveHeroes.Contains(hero) &&
                    !Hero.DeadOrDisabledHeroes.Contains(hero);
         }
@@ -120,17 +178,31 @@ public class SubModule : MBSubModuleBase
         return false;
     }
 
-    private bool ForceKeep(object obj)
-    {
-        return false;
-    }
-
     internal static void OnStartCleanPressed()
     {
         if (Instance is null) return;
         InformationManager.ShowInquiry(new InquiryData(
-            "", "Close the menu to start the clean up process.", true, true,
-            "OK", "Cancel", () => Instance._startPressed = true, () => Instance._startPressed = false));
+            "Confirm Action", "Go back to the world map to start the clean up process.", true, true,
+            "OK", "Cancel",
+            () =>
+            {
+                Instance._startPressed = true;
+                Instance._wipeAddon = null;
+            },
+            () => Instance._startPressed = false));
+    }
+
+    internal static void OnWipePressed(SaveCleanerAddon addon)
+    {
+        if (Instance is null) return;
+        InformationManager.ShowInquiry(new InquiryData(
+            $"Confirm Wipe {addon.Name}", "Go back to the world map to start wipe out the mod's data.", true, true,
+            "OK", "Cancel", () =>
+            {
+                Instance._wipeAddon = addon;
+                Instance._startPressed = false;
+            },
+            () => Instance._wipeAddon = null));
     }
 
     private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)

@@ -20,7 +20,7 @@ using Debug = TaleWorlds.Library.Debug;
 
 namespace SaveCleaner;
 
-public class Cleaner(CleanerMapView mapView, SaveCleanerOptions options)
+public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, SaveCleanerAddon wiping = null)
 {
     private readonly ILogger _logger = LogFactory.Get<Cleaner>();
     private Queue<object> _objectsToIterate;
@@ -34,8 +34,9 @@ public class Cleaner(CleanerMapView mapView, SaveCleanerOptions options)
     private readonly Dictionary<object, HashSet<object>> _parentMap = new();
     private readonly HashSet<object> _removingObjects = [];
     private static string PlayerClanAndName => $"{Clan.PlayerClan.Name.ToString().ToLower()}_{Hero.MainHero.Name.ToString().ToLower()}";
-    private static string BackupSaveName => $"before_cleaning_{PlayerClanAndName}_";
-    private static string FinishSaveName => $"after_cleaning_{PlayerClanAndName}_";
+    private string ActionName => wiping == null ? "cleaning" : $"wiping_{wiping.Name}";
+    private string BackupSaveName => $"before_{ActionName}_{PlayerClanAndName}_";
+    private string FinishSaveName => $"after_{ActionName}_{PlayerClanAndName}_";
     private Stopwatch _stopwatch;
     private string _backUpSave;
     private string _finishSave;
@@ -52,7 +53,7 @@ public class Cleaner(CleanerMapView mapView, SaveCleanerOptions options)
     {
         _stopwatch = new Stopwatch();
         _stopwatch.Start();
-        CleanConditions.Prepare(options);
+
         ForwardState();
         mapView.SetActive(true);
         mapView.SetText(new TextObject("Clean Started"));
@@ -294,6 +295,13 @@ public class Cleaner(CleanerMapView mapView, SaveCleanerOptions options)
             return;
         }
 
+        if (_state == CleanerState.BackingUp && wiping?.Wipe() == false)
+        {
+            InformationManager.DisplayMessage(new InformationMessage("Wipe failed!", Colors.Red));
+            OnError();
+            return;
+        }
+
         FinishState();
     }
 
@@ -301,7 +309,7 @@ public class Cleaner(CleanerMapView mapView, SaveCleanerOptions options)
     {
         if (_detailState == DetailState.Ended) return;
         Campaign.Current.SetTimeControlModeLock(false);
-        if (!_cleaned && _backUpSave is not null)
+        if (!_cleaned && _backUpSave is not null && wiping is null)
         {
             SaveGameFileInfo save = MBSaveLoad.GetSaveFileWithName(_backUpSave);
             if (save is not null)
@@ -452,7 +460,7 @@ public class Cleaner(CleanerMapView mapView, SaveCleanerOptions options)
 
     private bool RequireCleaning(object obj)
     {
-        return CleanConditions.IsRemovable(obj);
+        return !addons.Any(addon => addon.IsEssential(obj)) && addons.Any(addon => addon.IsRemovable(obj));
     }
 
     private static readonly MethodInfo GetClassDefinitionMethod = typeof(DefinitionContext).Method("GetClassDefinition");
