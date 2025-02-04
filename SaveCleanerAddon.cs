@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using TaleWorlds.MountAndBlade;
 
 // ReSharper disable EventNeverSubscribedTo.Global
@@ -12,14 +14,21 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
 
     public delegate bool WipeDelegate(SaveCleanerAddon addon);
 
+    public delegate bool PredicateDelegate(SaveCleanerAddon addon);
+
     public string Id { get; } = id;
     public string Name { get; } = name;
     private readonly ImmutableDictionary<string, ISetting> _settings = settings.ToImmutableDictionary(s => s.Id, s => s);
+    private Cleaner _cleaner;
     internal IEnumerable<ISetting> Settings => _settings.Values;
+
+    public override string ToString() => $"{Name} ({Id})";
 
     public event ObjectPredicateDelegate Removable;
     public event ObjectPredicateDelegate Essential;
     public event WipeDelegate OnWipe;
+    public event PredicateDelegate OnPreClean;
+    public event PredicateDelegate OnPostClean;
 
     internal bool CanWipe => OnWipe != null;
 
@@ -32,19 +41,69 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
         SubModule.Addons.Add(typeof(T), this);
     }
 
+    public IEnumerable<object> GetAllParents(object obj, int depth = -1)
+    {
+        if (_cleaner is null) throw new NullReferenceException("No cleaner available.");
+        yield return _cleaner.GetAllParents(obj, depth, []);
+    }
+
+    public IEnumerable<T> GetAllParents<T>(object obj, int depth = -1)
+    {
+        if (_cleaner is null) throw new NullReferenceException("No cleaner available.");
+        return _cleaner.GetAllParents<T>(obj, depth, []);
+    }
+
+    public object GetFirstParent(object obj, Func<object, bool> predicate, int depth = -1)
+    {
+        if (_cleaner is null) throw new NullReferenceException("No cleaner available.");
+        return _cleaner.GetFirstParent(obj, predicate, depth, []);
+    }
+
+    public IEnumerable<object> GetParents(object obj)
+    {
+        if (_cleaner is null) throw new NullReferenceException("No cleaner available.");
+        return _cleaner.GetParents(obj);
+    }
+
+    public void ClearRemovablePredicates()
+    {
+        Removable = null;
+    }
+
+    public void ClearEssentialPredicates()
+    {
+        Essential = null;
+    }
+
     internal bool IsRemovable(object o)
     {
-        return Removable?.Invoke(this, o) ?? false;
+        return Removable?.GetInvocationList().Cast<ObjectPredicateDelegate>().Any(p => p.Invoke(this, o)) ?? false;
     }
 
     internal bool IsEssential(object o)
     {
-        return Essential?.Invoke(this, o) ?? false;
+        return Essential?.GetInvocationList().Cast<ObjectPredicateDelegate>().Any(p => p.Invoke(this, o)) ?? false;
     }
 
     internal bool Wipe()
     {
-        return OnWipe?.Invoke(this) ?? false;
+        if (Disabled) return false;
+        return OnWipe?.GetInvocationList().Cast<WipeDelegate>().All(p => p.Invoke(this)) ?? false;
+    }
+
+    internal bool PreClean(Cleaner cleaner)
+    {
+        if (Disabled) return true;
+        _cleaner = cleaner;
+        return OnPreClean?.GetInvocationList().Cast<PredicateDelegate>().All(p => p.Invoke(this)) ?? true;
+    }
+
+    internal bool PostClean()
+    {
+        if (Disabled) return true;
+        bool result = OnPostClean?.GetInvocationList().Cast<PredicateDelegate>().All(p => p.Invoke(this)) ?? true;
+        _cleaner = null;
+        return result;
     }
 
     public interface ISetting

@@ -15,6 +15,11 @@ using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.MountAndBlade;
 
+#if DEBUG
+using System.Diagnostics;
+using TaleWorlds.InputSystem;
+#endif
+
 namespace SaveCleaner;
 
 public class SubModule : MBSubModuleBase
@@ -23,7 +28,7 @@ public class SubModule : MBSubModuleBase
     public static readonly Version Version = typeof(SubModule).Assembly.GetName().Version;
     public static readonly Harmony Harmony = new("Bannerlord.SaveCleaner.JungleDruid");
     private ILogger _logger;
-    private ILogger Logger => _logger ??= LogFactory.Get<SubModule>();
+    internal ILogger Logger => _logger ??= LogFactory.Get<SubModule>();
     public static SubModule Instance { get; private set; }
     private Cleaner _cleaner;
     public SaveEventReceiver SaveEventReceiver { get; } = new();
@@ -45,16 +50,7 @@ public class SubModule : MBSubModuleBase
         Instance = this;
         OnServiceRegistration();
         Harmony.PatchAll(Assembly.GetExecutingAssembly());
-        AddDefaultAddon();
-    }
-
-    private static void AddDefaultAddon()
-    {
-        var addon = new SaveCleanerAddon(Harmony.Id, Name,
-            new SaveCleanerAddon.BoolSetting(Settings.RemoveDisappearedHeroes, "Remove Disappeared Heroes",
-                "Remove disappeared heroes that are likely spawned by mods.", 0, true));
-        addon.Removable += Removable;
-        addon.Register<SubModule>();
+        DefaultAddon.Register();
     }
 
     protected override void OnBeforeInitialModuleScreenSetAsRoot()
@@ -159,19 +155,6 @@ public class SubModule : MBSubModuleBase
         ISettingsBuilder builder = MCMSettings.AddSettings(campaign.UniqueGameId);
         _settings = builder.SetOnPropertyChanged(OnPropertyChanged).BuildAsPerCampaign();
         _settings?.Register();
-    }
-
-    private static bool Removable(SaveCleanerAddon addon, object o)
-    {
-        if (o is Hero hero)
-        {
-            return addon.GetValue<bool>(Settings.RemoveDisappearedHeroes) &&
-                   hero is { IsActive: false, PartyBelongedTo: null, CurrentSettlement: null } &&
-                   !Hero.AllAliveHeroes.Contains(hero) &&
-                   !Hero.DeadOrDisabledHeroes.Contains(hero);
-        }
-
-        return false;
     }
 
     internal static void OnStartCleanPressed()

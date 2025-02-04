@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using Bannerlord.ButterLib.Logger.Extensions;
 using HarmonyLib;
 using Microsoft.Extensions.Logging;
 using TaleWorlds.CampaignSystem;
@@ -20,7 +21,7 @@ using Debug = TaleWorlds.Library.Debug;
 
 namespace SaveCleaner;
 
-public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, SaveCleanerAddon wiping = null)
+internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, SaveCleanerAddon wiping = null)
 {
     private readonly ILogger _logger = LogFactory.Get<Cleaner>();
     private Queue<object> _objectsToIterate;
@@ -51,6 +52,13 @@ public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Save
 
     public Cleaner Start()
     {
+        if (_state != CleanerState.None)
+        {
+            _logger.LogError("The cleaner is already running!");
+            OnError();
+            return this;
+        }
+
         _stopwatch = new Stopwatch();
         _stopwatch.Start();
 
@@ -60,6 +68,49 @@ public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Save
         InformationManager.DisplayMessage(new InformationMessage("======= Clean started =======", Colors.Yellow));
 
         return this;
+    }
+
+    public IEnumerable<object> GetAllParents(object obj, int depth, HashSet<object> visited)
+    {
+        if (!visited.Add(obj) || depth == 0) yield break;
+        if (!_parentMap.TryGetValue(obj, out var parents)) yield break;
+
+        foreach (object parent in parents.Where(parent => !visited.Contains(parent)))
+        {
+            yield return parent;
+        }
+
+        if (depth == 1) yield break;
+        foreach (object parent in parents.Where(parent => !visited.Contains(parent)))
+        {
+            foreach (object p in GetAllParents(parent, depth - 1, visited)) yield return p;
+        }
+    }
+
+    public IEnumerable<T> GetAllParents<T>(object obj, int depth, HashSet<object> visited)
+    {
+        foreach (object parent in GetAllParents(obj, depth, visited))
+        {
+            if (parent is T t) yield return t;
+        }
+    }
+
+    public IEnumerable<object> GetParents(object obj)
+    {
+        return _parentMap.TryGetValue(obj, out var parents) ? parents : [];
+    }
+
+    public object GetFirstParent(object obj, Func<object, bool> predicate, int depth, HashSet<object> visited)
+    {
+        if (!visited.Add(obj) || depth == 0) return null;
+        if (!_parentMap.TryGetValue(obj, out var parents)) return null;
+        object match = parents.FirstOrDefaultQ(predicate);
+        if (match != null) return match;
+        if (depth == 1) return null;
+        return parents
+            .Where(parent => !visited.Contains(parent))
+            .Select(parent => GetFirstParent(parent, predicate, depth - 1, visited))
+            .FirstOrDefault(o => o != null);
     }
 
     private void ClearCollections()
@@ -77,43 +128,60 @@ public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Save
     {
         if (!StateGate("Collecting objects...")) return;
 
+        var failedAddons = addons.WhereQ(a => !a.Disabled && !a.PreClean(this)).ToListQ();
+        if (failedAddons.Count > 0)
+        {
+            _logger.LogErrorAndDisplay($"PreClean failed by addons: [{failedAddons.Join()}]");
+            OnError();
+            return;
+        }
+
         Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
         Campaign.Current.SetTimeControlModeLock(true);
-        _definitionContext.FillWithCurrentTypes();
 
-        Campaign.Current.WaitAsyncTasks();
-        _logger.LogDebug("Collecting objects...");
-        CollectObjects();
-        _logger.LogDebug($"Collected {_childObjects.Count} objects.");
-
-        _beforeCleanTypes = GetTypeCollection(_childObjects);
-        foreach (var kv in _beforeCleanTypes.OrderByQ(kv => -kv.Value))
+        try
         {
-            _logger.LogTrace($"Collected [{kv.Key.Name}]: {kv.Value}");
-        }
+            _definitionContext.FillWithCurrentTypes();
 
-        _logger.LogDebug("Collecting references...");
-        foreach (object obj in _childObjects.Where(RequireCleaning))
-        {
-            CollectReferences(obj);
-        }
+            Campaign.Current.WaitAsyncTasks();
+            _logger.LogDebug("Collecting objects...");
+            CollectObjects();
+            _logger.LogDebug($"Collected {_childObjects.Count} objects.");
 
-        _logger.LogDebug($"Collected {_removingObjects.Count} removable objects.");
-        if (_removingObjects.Any())
-        {
-            var collected = GetTypeCollection(_removingObjects);
-            foreach (var kv in collected.OrderByQ(kv => -kv.Value))
+            _beforeCleanTypes = GetTypeCollection(_childObjects);
+            foreach (var kv in _beforeCleanTypes.OrderByQ(kv => -kv.Value))
             {
-                _logger.LogTrace($"Collected Removable [{kv.Key.Name}]: {kv.Value}");
+                _logger.LogTrace($"Collected [{kv.Key.Name}]: {kv.Value}");
             }
 
-            InformationManager.DisplayMessage(new InformationMessage($"Collected {_removingObjects.Count} removable objects, cleaning up...", Colors.Cyan));
-            FinishState();
+            _logger.LogDebug("Collecting references...");
+            foreach (object obj in _childObjects.Where(RequireCleaning))
+            {
+                CollectReferences(obj);
+            }
+
+            _logger.LogDebug($"Collected {_removingObjects.Count} removable objects.");
+            if (_removingObjects.Any())
+            {
+                var collected = GetTypeCollection(_removingObjects);
+                foreach (var kv in collected.OrderByQ(kv => -kv.Value))
+                {
+                    _logger.LogTrace($"Collected Removable [{kv.Key.Name}]: {kv.Value}");
+                }
+
+                InformationManager.DisplayMessage(new InformationMessage($"Collected {_removingObjects.Count} removable objects, cleaning up...", Colors.Cyan));
+                FinishState();
+            }
+            else
+            {
+                InformationManager.DisplayMessage(new InformationMessage("Nothing to clean.", Colors.Cyan));
+                OnComplete();
+            }
         }
-        else
+        catch (Exception ex)
         {
-            InformationManager.DisplayMessage(new InformationMessage("Nothing to clean.", Colors.Cyan));
-            OnComplete();
+            _logger.LogError(ex, "Error while collecting objects.");
+            OnError();
         }
     }
 
@@ -167,6 +235,14 @@ public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Save
     {
         if (Campaign.Current.SaveHandler.IsSaving) return;
         if (!StateGate("Saving game...")) return;
+
+        var failedAddons = addons.WhereQ(a => !a.Disabled && !a.PostClean()).ToListQ();
+        if (failedAddons.Count > 0)
+        {
+            _logger.LogErrorAndDisplay($"PostClean failed by addons: [{failedAddons.Join()}]");
+            OnError();
+            return;
+        }
 
         Campaign.Current.SetTimeControlModeLock(false);
         _finishSave = GetAvailableSaveName(FinishSaveName);
@@ -322,6 +398,11 @@ public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Save
         ChangeState(CleanerState.Complete);
         _stopwatch.Stop();
         InformationManager.DisplayMessage(new InformationMessage($"Clean ended. Took {_stopwatch.ElapsedMilliseconds}ms to finish.", Colors.Yellow));
+        if (_finishSave is not null)
+        {
+            InformationManager.DisplayMessage(new InformationMessage($"Please load the save before continue playing: {_finishSave}", Colors.Yellow));
+        }
+
         mapView.SetActive(false);
         FinishState();
     }
@@ -331,7 +412,14 @@ public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Save
         Campaign.Current.SetTimeControlModeLock(false);
         ChangeState(CleanerState.Complete);
         _stopwatch.Stop();
+        _logger.LogError("Clean terminated dur to errors.");
         InformationManager.DisplayMessage(new InformationMessage("Clean terminated. See logs for details.", Colors.Red));
+
+        if (_backUpSave is not null)
+        {
+            InformationManager.DisplayMessage(new InformationMessage("Reloading the backup save is recommended: " + _backUpSave, Colors.Red));
+        }
+
         mapView.SetActive(false);
         FinishState();
     }
@@ -409,9 +497,9 @@ public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Save
                 removed = true;
                 break;
             case ContainerType.Array:
-                if (parent is TroopRosterElement[] elements)
+                if (parent is TroopRosterElement[] troopRosterElements)
                 {
-                    if (_parentMap.TryGetValue(elements, out var set))
+                    if (_parentMap.TryGetValue(troopRosterElements, out var set))
                     {
                         foreach (object rosterObject in set)
                         {
@@ -424,6 +512,21 @@ public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Save
                     {
                         Debugger.Break();
                     }
+                }
+                else if (parent is ItemRosterElement[] itemRosterElements)
+                {
+                    if (_parentMap.TryGetValue(itemRosterElements, out var set))
+                    {
+                        foreach (object rosterObject in set)
+                        {
+                            if (rosterObject is not ItemRoster roster) continue;
+                            roster.RemoveIf(e => e.EquipmentElement.Item == obj ? e.Amount : 0);
+                            removed = true;
+                        }
+                    }
+                }
+                else if (parent is EquipmentElement[])
+                {
                 }
                 else
                 {
@@ -460,7 +563,7 @@ public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Save
 
     private bool RequireCleaning(object obj)
     {
-        return !addons.Any(addon => addon.IsEssential(obj)) && addons.Any(addon => addon.IsRemovable(obj));
+        return !addons.WhereQ(a => !a.Disabled).Any(addon => addon.IsEssential(obj)) && addons.Any(addon => addon.IsRemovable(obj));
     }
 
     private static readonly MethodInfo GetClassDefinitionMethod = AccessTools.Method(typeof(DefinitionContext), "GetClassDefinition");
@@ -509,8 +612,7 @@ public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Save
             return;
         }
 
-        GetChildObjects(classDefinition, parent,
-            _temporaryCollectedObjects);
+        GetChildObjects(classDefinition, parent, _temporaryCollectedObjects);
         for (int index = 0; index < _temporaryCollectedObjects.Count; ++index)
         {
             object temporaryCollectedObject = _temporaryCollectedObjects[index];
