@@ -463,9 +463,9 @@ public class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Save
         return !addons.Any(addon => addon.IsEssential(obj)) && addons.Any(addon => addon.IsRemovable(obj));
     }
 
-    private static readonly MethodInfo GetClassDefinitionMethod = typeof(DefinitionContext).Method("GetClassDefinition");
-    private static readonly MethodInfo GetStructDefinitionMethod = typeof(DefinitionContext).Method("GetStructDefinition");
-    private static readonly MethodInfo GetContainerDefinitionMethod = typeof(DefinitionContext).Method("GetContainerDefinition");
+    private static readonly MethodInfo GetClassDefinitionMethod = AccessTools.Method(typeof(DefinitionContext), "GetClassDefinition");
+    private static readonly MethodInfo GetStructDefinitionMethod = AccessTools.Method(typeof(DefinitionContext), "GetStructDefinition");
+    private static readonly MethodInfo GetContainerDefinitionMethod = AccessTools.Method(typeof(DefinitionContext), "GetContainerDefinition");
 
     private TypeDefinition GetClassDefinition(Type type)
     {
