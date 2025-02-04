@@ -24,13 +24,4 @@
             <Tags/>
         </SubModule>
     </SubModules>
-    <Xmls>
-        <XmlNode>
-            <XmlName id="NPCCharacters" path="lords"/>
-            <IncludedGameTypes>
-                <GameType value="Campaign"/>
-                <GameType value="CampaignStoryMode"/>
-            </IncludedGameTypes>
-        </XmlNode>
-    </Xmls>
 </Module>
