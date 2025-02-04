@@ -175,7 +175,8 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             else
             {
                 InformationManager.DisplayMessage(new InformationMessage("Nothing to clean.", Colors.Cyan));
-                OnComplete();
+                if (wiping is null) OnComplete();
+                else ChangeState(CleanerState.Finalizing);
             }
         }
         catch (Exception ex)
