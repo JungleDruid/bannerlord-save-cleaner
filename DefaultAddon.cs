@@ -88,10 +88,11 @@ internal static class DefaultAddon
         if (addon.GetParents(obj).CountQ() == 1)
         {
             object parent = addon.GetParents(obj).First();
-            if (parent != Vault["CraftingCampaignBehavior._craftedItemDictionary"])
-                Debugger.Break();
-            else
+            if (parent == Vault["CraftingCampaignBehavior._craftedItemDictionary"])
                 return true;
+#if DEBUG
+            Debugger.Break();
+#endif
         }
 
         return false;
