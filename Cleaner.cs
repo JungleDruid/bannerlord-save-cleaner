@@ -160,7 +160,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
                         new TextObject("{=SVCLRAddonCollectedCount}{ADDON} has collected {NUMBER} removable objects.",
                             new Dictionary<string, object>
                             {
-                                ["ADDON"] = grouping.Key,
+                                ["ADDON"] = grouping.Key.Name,
                                 ["NUMBER"] = count
                             }).ToString());
                 }
