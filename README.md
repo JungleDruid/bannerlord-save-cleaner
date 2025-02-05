@@ -22,3 +22,5 @@ Also, make sure the reference in .csproj file is not [private](https://github.co
 [Default Addon](https://github.com/JungleDruid/bannerlord-save-cleaner/blob/master/DefaultAddon.cs)
 
 [Bandit Militia](https://github.com/JungleDruid/BanditMilitias/blob/master/SaveCleanerSupport.cs)
+
+[Save Cleaner Addons](https://github.com/JungleDruid/bannerlord-save-cleaner-addons)
