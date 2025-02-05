@@ -47,6 +47,6 @@ public class SaveCleanerVM : ViewModel
     public override void RefreshValues()
     {
         base.RefreshValues();
-        SavingText = _text?.ToString();
+        SavingText = _text?.ToString() ?? "";
     }
 }
