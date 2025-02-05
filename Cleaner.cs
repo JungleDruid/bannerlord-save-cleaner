@@ -54,8 +54,11 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
 
         ForwardState();
         mapView.SetActive(true);
-        mapView.SetText(new TextObject("Clean Started"));
-        LogAndMessage("======= Clean started =======", LogLevel.Information);
+        mapView.SetText(new TextObject("{=SVCLRCleanStarted}Clean Started"));
+        string line = new('=', 10);
+        LogAndMessage($"{line} Start Cleaning {line}",
+            $"{line} {new TextObject("{=SVCLRCleanStarted}Clean Started")} {line}",
+            LogLevel.Information);
 
         return this;
     }
@@ -105,7 +108,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
 
     private void Collecting()
     {
-        if (!StateGate("Collecting objects...")) return;
+        if (!StateGate(new TextObject("{=SVCLRStatusCollecting}Collecting objects..."))) return;
 
         var failedAddons = addons.WhereQ(a => !a.Disabled && !a.PreClean(this)).ToListQ();
         if (failedAddons.Count > 0)
@@ -152,33 +155,44 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
 
                 foreach (var grouping in _removableObjects.GroupBy(kv => kv.Value))
                 {
-                    LogAndMessage($"{grouping.Key} has collected {grouping.Count()} removable objects.");
+                    int count = grouping.Count();
+                    LogAndMessage($"{grouping.Key} has collected {count} removable objects.",
+                        new TextObject("{=SVCLRAddonCollectedCount}{ADDON} has collected {NUMBER} removable objects.",
+                            new Dictionary<string, object>
+                            {
+                                ["ADDON"] = grouping.Key,
+                                ["NUMBER"] = count
+                            }).ToString());
                 }
 
-                LogAndMessage($"Collected {_removableObjects.Count} removable objects in total.");
+                LogAndMessage($"Collected {_removableObjects.Count} removable objects in total.",
+                    new TextObject("{=SVCLRTotalCollectedCount}Collected {NUMBER} removable objects in total.",
+                        new Dictionary<string, object> { ["NUMBER"] = _removableObjects.Count, }).ToString());
                 FinishState();
             }
             else
             {
-                LogAndMessage("Nothing to clean.", LogLevel.Information);
+                LogAndMessage("Nothing to clean.", new TextObject("{=SVCLRNothingToClean}Nothing to clean.").ToString(), LogLevel.Information);
                 if (wiping is null) OnComplete();
                 else ChangeState(CleanerState.Finalizing);
             }
         }
         catch (Exception ex)
         {
-            LogAndMessage("Error while collecting objects.", LogLevel.Error, ex);
+            LogAndMessage("Error while collecting objects.",
+                new TextObject("{=SVCLRErrorCollectingObjects}Error while collecting objects.").ToString(),
+                LogLevel.Error, ex);
             OnError();
         }
     }
 
-    private bool StateGate(string startMessage)
+    private bool StateGate(TextObject startMessage)
     {
         switch (_detailState)
         {
             case DetailState.None:
-                LogAndMessage(startMessage);
-                mapView.SetText(new TextObject(startMessage));
+                LogAndMessage(startMessage.Value.Substring(startMessage.Value.IndexOf('}')), startMessage.ToString());
+                mapView.SetText(startMessage);
                 _detailState = DetailState.Starting;
                 return false;
             case DetailState.Starting:
@@ -198,7 +212,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
     private void BackingUp()
     {
         if (Campaign.Current.SaveHandler.IsSaving) return;
-        if (!StateGate("Creating backup save...")) return;
+        if (!StateGate(new TextObject("{=SVCLRStatusBackup}Creating backup save..."))) return;
 
         _backUpSave = GetAvailableSaveName(BackupSaveName);
         SubModule.Instance.SaveEventReceiver.SaveOver += OnSaveOver;
@@ -208,7 +222,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
     private void Finalizing()
     {
         if (Campaign.Current.SaveHandler.IsSaving) return;
-        if (!StateGate("Saving game...")) return;
+        if (!StateGate(new TextObject("{=SVCLRStatusFinalizing}Saving game..."))) return;
 
         var failedAddons = addons.WhereQ(a => !a.Disabled && !a.PostClean()).ToListQ();
         if (failedAddons.Count > 0)
@@ -266,7 +280,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
 
     private void Counting()
     {
-        if (!StateGate("Counting results...")) return;
+        if (!StateGate(new TextObject("{=SVCLRStatusCounting}Counting results..."))) return;
 
         Campaign.Current.WaitAsyncTasks();
         var childObjects = new Collector().CollectObjects();
@@ -282,12 +296,13 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             }
         }
 
-        string message = "Clean results:";
-        LogAndMessage(message, LogLevel.Information);
+        LogAndMessage("Clean results:",
+            new TextObject("{=SVCLRCleanResults}Clean results:").ToString(),
+            LogLevel.Information);
         foreach (var kv in result.OrderByQ(kv => -kv.Value))
         {
-            message = $"[{kv.Key.Name}]: {kv.Value}";
-            LogAndMessage(message, LogLevel.Information);
+            string logMessage = $"[{kv.Key.Name}]: {kv.Value}";
+            LogAndMessage(logMessage, logMessage, LogLevel.Information);
         }
 
         FinishState();
@@ -312,14 +327,17 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
 
     private void Removing()
     {
-        if (!StateGate("Removing objects...")) return;
+        if (!StateGate(new TextObject("{=SVCLRStatusRemoving}Removing objects..."))) return;
 
         if (_removableObjects.WhereQ(kv => !RemoveReferences(kv.Key, kv.Value, false)).AnyQ())
         {
             throw new InvalidOperationException("Removing objects failed, but should never happen.");
         }
 
-        LogAndMessage($"Cleaned {_removableObjects.Count} objects", LogLevel.Information);
+        LogAndMessage($"Cleaned {_removableObjects.Count} objects.",
+            new TextObject("{=SVCLRCleanedObjectsCount}Cleaned {NUMBER} objects.",
+                new Dictionary<string, object> { ["NUMBER"] = _removableObjects.Count }).ToString(),
+            LogLevel.Information);
         _cleaned = true;
         FinishState();
     }
@@ -351,14 +369,14 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         if (!isSuccessful)
         {
             string message = $"Failed to {(_state == CleanerState.BackingUp ? "backup before" : "save after ")} cleaning.";
-            LogAndMessage(message, LogLevel.Error);
+            LogAndMessage(message, message, LogLevel.Error);
             OnError();
             return;
         }
 
         if (_state == CleanerState.BackingUp && wiping?.Wipe() == false)
         {
-            LogAndMessage("Wipe failed!", LogLevel.Error);
+            LogAndMessage("Wipe failed!", new TextObject("{=SVCLRWipeFailed}Wipe failed!").ToString(), LogLevel.Error);
             OnError();
             return;
         }
@@ -375,17 +393,22 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             SaveGameFileInfo save = MBSaveLoad.GetSaveFileWithName(_backUpSave);
             if (save is not null)
             {
-                LogAndMessage("Removing backup save...");
+                LogAndMessage("Removing backup save...", new TextObject("{=SVCLRRemovingBackup}Removing backup save...").ToString());
                 MBSaveLoad.DeleteSaveGame(_backUpSave);
             }
         }
 
         ChangeState(CleanerState.Complete);
         _stopwatch.Stop();
-        LogAndMessage($"Clean ended. Took {_stopwatch.ElapsedMilliseconds / 1000f:F2} seconds to finish.", LogLevel.Information);
+        string seconds = (_stopwatch.ElapsedMilliseconds / 1000f).ToString("F2");
+        LogAndMessage($"Clean complete. Took {seconds} seconds to finish.",
+            new TextObject("{=SVCLRCleanComplete}Clean complete. Took {NUMBER} seconds to finish.",
+                new Dictionary<string, object> { ["NUMBER"] = seconds }).ToString(),
+            LogLevel.Information);
         if (_finishSave is not null)
         {
-            InformationManager.DisplayMessage(new InformationMessage($"Please load the save before continue playing: {_finishSave}", Colors.Yellow));
+            InformationManager.DisplayMessage(new InformationMessage(
+                new TextObject("{=SVCLRSuccessLoadReminder}Please load the save before continue playing: ") + _finishSave, Colors.Yellow));
         }
 
         mapView.SetActive(false);
@@ -397,11 +420,14 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         Campaign.Current.SetTimeControlModeLock(false);
         ChangeState(CleanerState.Complete);
         _stopwatch.Stop();
-        LogAndMessage("Clean terminated. See logs for details.", LogLevel.Error);
+        LogAndMessage("Clean terminated. See logs for details.",
+            new TextObject("{=SVCLRCleanTerminated}Clean terminated. See logs for details.").ToString(),
+            LogLevel.Error);
 
         if (_backUpSave is not null)
         {
-            InformationManager.DisplayMessage(new InformationMessage("Please load the backup save before continue playing: " + _backUpSave, Colors.Red));
+            InformationManager.DisplayMessage(new InformationMessage(
+                new TextObject("{=SVCLRFailureLoadReminder}Please load the backup save before continue playing: ") + _backUpSave, Colors.Red));
         }
 
         mapView.SetActive(false);
@@ -546,7 +572,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         }
     }
 
-    private void LogAndMessage(string message, LogLevel level = LogLevel.Debug, Exception exception = null)
+    private void LogAndMessage(string logMessage, string gameMessage, LogLevel level = LogLevel.Debug, Exception exception = null)
     {
         Color color = level switch
         {
@@ -560,9 +586,8 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             _ => throw new ArgumentOutOfRangeException(nameof(level), level, null)
         };
 
-        _logger.LogInformation("");
-        _logger.Log(level, 0, new FormattedLogValues(message), exception, LogFormatter);
-        InformationManager.DisplayMessage(new InformationMessage(message, color));
+        _logger.Log(level, 0, new FormattedLogValues(logMessage), exception, LogFormatter);
+        InformationManager.DisplayMessage(new InformationMessage(gameMessage, color));
     }
 
     private static string LogFormatter(FormattedLogValues state, Exception exception)

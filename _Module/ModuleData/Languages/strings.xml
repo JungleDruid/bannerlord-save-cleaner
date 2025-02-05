@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+    <tags>
+        <tag language="English"/>
+    </tags>
+    <strings>
+        <string id="SVCLRSaveCleaner" text="Save Cleaner"/>
+        <string id="SVCLRGroupMain" text=" Main"/> <!-- Keep the space before the translation so it can be on top of the menu -->
+        <string id="SVCLRCleanerMenu" text="Cleaner"/>
+        <string id="SVCLRStartCleaning" text="Start Cleaning"/>
+        <string id="SVCLRStartButton" text="Start"/>
+        <string id="SVCLRStartCleaningHint" text="Will start cleaning after closing the menu."/>
+        <string id="SVCLRGroupAddons" text="Addons"/>
+        <string id="SVCLRAddonWipe" text="Wipe out data from {ADDON_NAME}"/>
+        <string id="SVCLRAddonWipeHint" text="Will start wiping data from {ADDON_NAME} after closing the menu."/>
+        <string id="SVCLRRemoveDisappearedHeroes" text="Remove Disappeared Heroes"/>
+        <string id="SVCLRRemoveDisappearedHeroesHint" text="These disappeared heroes are usually spawned by mods."/>
+        <string id="SVCLRRemoveAbandonedCraftedItems" text="Remove Abandoned Crafted Items"/>
+        <string id="SVCLRRemoveAbandonedCraftedItemsHint" text="The game by default keeps all the crafted items even after they are disappeared."/>
+        <string id="SVCLRButtonOK" text="OK"/>
+        <string id="SVCLRButtonCancel" text="Cancel"/>
+        <string id="SVCLRButtonYes" text="Yes"/>
+        <string id="SVCLRButtonNo" text="No"/>
+        <string id="SVCLRDialogCleanTitle" text="Start Cleaning"/>
+        <string id="SVCLRDialogCleanContent" text="Go back to the world map to start the clean up process."/>
+        <string id="SVCLRDialogWipeTitle" text="Start Wiping {ADDON_NAME}"/>
+        <string id="SVCLRDialogWipeContent" text="Go back to the world map to start wipe out the mod's data."/>
+        <string id="SVCLRError" text="Error"/>
+        <string id="SVCLRErrorNoAddonAvailable" text="No addon available."/>
+        <string id="SVCLRErrorWipeTargetDisabled" text="Wipe target is disabled."/>
+        <string id="SVCLRDialogConfirmCleanTitle" text="Confirm Clean Up"/>
+        <string id="SVCLRDialogConfirmCleanContent" text="Start the clean up progress now?"/>
+        <string id="SVCLRDialogConfirmWipeTitle" text="Confirm Wipe {ADDON_NAME}"/>
+        <string id="SVCLRDialogConfirmWipeContent" text="Start the wipe progress now?"/>
+        <string id="SVCLRCleanStarted" text="Clean Started"/>
+        <string id="SVCLRStatusCollecting" text="Collecting objects..."/>
+        <string id="SVCLRAddonCollectedCount" text="{ADDON} has collected {NUMBER} removable objects."/>
+        <string id="SVCLRTotalCollectedCount" text="Collected {NUMBER} removable objects in total."/>
+        <string id="SVCLRNothingToClean" text="Nothing to clean."/>
+        <string id="SVCLRErrorCollectingObjects" text="Error while collecting objects."/>
+        <string id="SVCLRStatusBackup" text="Creating backup save..."/>
+        <string id="SVCLRStatusFinalizing" text="Saving game..."/>
+        <string id="SVCLRStatusCounting" text="Counting results..."/>
+        <string id="SVCLRCleanResults" text="Clean results:"/>
+        <string id="SVCLRStatusRemoving" text="Removing objects..."/>
+        <string id="SVCLRCleanedObjectsCount" text="Cleaned {NUMBER} objects."/>
+        <string id="SVCLRWipeFailed" text="Wipe failed!"/>
+        <string id="SVCLRRemovingBackup" text="Removing backup save..."/>
+        <string id="SVCLRCleanComplete" text="Clean complete. Took {NUMBER} seconds to finish."/>
+        <string id="SVCLRCleanTerminated" text="Clean terminated. See logs for details."/>
+        <string id="SVCLRSuccessLoadReminder" text="Please load the save before continue playing: "/>
+        <string id="SVCLRFailureLoadReminder" text="Please load the backup save before continue playing: "/>
+    </strings>
+</base>

@@ -1,14 +1,16 @@
 using System;
+using System.Collections.Generic;
 using MCM.Abstractions.Base;
 using MCM.Abstractions.FluentBuilder;
 using MCM.Common;
+using TaleWorlds.Localization;
 
 namespace SaveCleaner;
 
 internal static class MCMSettings
 {
     private static string SettingsId => $"{SubModule.Name}_v{SubModule.Version.ToString(1)}";
-    private static string SettingsName => $"{SubModule.Name} {SubModule.Version.ToString(3)}";
+    private static string SettingsName => $"{new TextObject("{=SVCLRSaveCleaner}Save Cleaner")} {SubModule.Version.ToString(3)}";
 
     private class ModPresetBuilder
     {
@@ -29,7 +31,7 @@ internal static class MCMSettings
             .SetFormat("json2")
             .SetFolderName(SubModule.Name)
             .SetSubFolder(id)
-            .CreateGroup("Main/Actions", BuildButtonGroup)
+            .CreateGroup("{=SVCLRGroupMain} Main/{=SVCLRCleanerMenu}Cleaner", BuildButtonGroup)
             .BuildModGroups(modPresetBuilder)
             .CreatePreset(BaseSettings.DefaultPresetId, BaseSettings.DefaultPresetName, builder
                 => modPresetBuilder.BuildDefaults(builder));
@@ -39,18 +41,18 @@ internal static class MCMSettings
                 .SetGroupOrder(0)
                 .AddButton(
                     "start_cleaning",
-                    "Start Cleaning",
+                    "{=SVCLRStartCleaning}Start Cleaning",
                     new ProxyRef<Action>(() => SubModule.OnStartCleanPressed, null),
-                    "Start",
+                    "{=SVCLRStartButton}Start",
                     propBuilder => propBuilder
-                        .SetHintText("Start cleaning after closing the menu."));
+                        .SetHintText("{=SVCLRStartCleaningHint}Will start cleaning after closing the menu."));
     }
 
     private static ISettingsBuilder BuildModGroups(this ISettingsBuilder builder, ModPresetBuilder modPresetBuilder)
     {
         foreach (SaveCleanerAddon addon in SubModule.Addons.Values)
         {
-            builder.CreateGroup($"Mod/{addon.Name}",
+            builder.CreateGroup($"{new TextObject("{=SVCLRGroupAddons}Addons")}/{addon.Name}",
                 groupBuilder =>
                 {
                     groupBuilder
@@ -69,11 +71,13 @@ internal static class MCMSettings
                         groupBuilder
                             .AddButton(
                                 $"start_wiping_{addon.Id}",
-                                $"Wipe out data from {addon.Name}",
+                                new TextObject("{=SVCLRAddonWipe}Wipe out data from {ADDON_NAME}",
+                                    new Dictionary<string, object> { ["ADDON_NAME"] = addon.Name }).ToString(),
                                 new ProxyRef<Action>(() => () => SubModule.OnWipePressed(cache), null),
-                                "Wipe",
+                                "{=SVCLRStartButton}Start",
                                 propBuilder => propBuilder
-                                    .SetHintText($"Start wiping data from {addon.Id} after closing the menu.")
+                                    .SetHintText(new TextObject("{=SVCLRAddonWipeHint}Will start wiping data from {ADDON_NAME} after closing the menu.",
+                                        new Dictionary<string, object> { ["ADDON_NAME"] = addon.Name }).ToString())
                                     .SetOrder(1000));
                     }
 

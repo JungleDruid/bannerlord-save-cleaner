@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+    <tags>
+        <tag language="繁體中文"/>
+    </tags>
+    <strings>
+        <string id="SVCLRSaveCleaner" text="存檔清理器"/>
+        <string id="SVCLRGroupMain" text=" 主要"/>
+        <string id="SVCLRCleanerMenu" text="清理器"/>
+        <string id="SVCLRStartCleaning" text="開始清理"/>
+        <string id="SVCLRStartButton" text="執行"/>
+        <string id="SVCLRStartCleaningHint" text="將會在關閉選單後開始清理。"/>
+        <string id="SVCLRGroupAddons" text="插件"/>
+        <string id="SVCLRAddonWipe" text="從 {ADDON_NAME} 清除所有資料"/>
+        <string id="SVCLRAddonWipeHint" text="將會在關閉選單後開始從 {ADDON_NAME} 清除所有資料。"/>
+        <string id="SVCLRRemoveDisappearedHeroes" text="移除消失的英雄"/>
+        <string id="SVCLRRemoveDisappearedHeroesHint" text="這些消失的英雄通常是自訂模組產生的。"/>
+        <string id="SVCLRRemoveAbandonedCraftedItems" text="移除已遺棄的鍛造成品"/>
+        <string id="SVCLRRemoveAbandonedCraftedItemsHint" text="這遊戲保存了所有鍛造成品的資料，就算它們已經從遊戲中消失。"/>
+        <string id="SVCLRButtonOK" text="確定"/>
+        <string id="SVCLRButtonCancel" text="取消"/>
+        <string id="SVCLRButtonYes" text="是"/>
+        <string id="SVCLRButtonNo" text="否"/>
+        <string id="SVCLRDialogCleanTitle" text="開始清理"/>
+        <string id="SVCLRDialogCleanContent" text="回到遊戲的大地圖以開始清理。"/>
+        <string id="SVCLRDialogWipeTitle" text="開始清除 {ADDON_NAME}"/>
+        <string id="SVCLRDialogWipeContent" text="回到遊戲的大地圖以開始清除這個模組的資料。"/>
+        <string id="SVCLRError" text="錯誤"/>
+        <string id="SVCLRErrorNoAddonAvailable" text="無可用插件。"/>
+        <string id="SVCLRErrorWipeTargetDisabled" text="清除目標未開啓。"/>
+        <string id="SVCLRDialogConfirmCleanTitle" text="確認清理"/>
+        <string id="SVCLRDialogConfirmCleanContent" text="是否現在開始執行清理程序？"/>
+        <string id="SVCLRDialogConfirmWipeTitle" text="確認清除 {ADDON_NAME}"/>
+        <string id="SVCLRDialogConfirmWipeContent" text="是否現在開始清除目標模組資料？"/>
+        <string id="SVCLRCleanStarted" text="開始清理"/>
+        <string id="SVCLRStatusCollecting" text="正在蒐集資料……"/>
+        <string id="SVCLRAddonCollectedCount" text="{ADDON} 蒐集了 {NUMBER} 個可移除資料。"/>
+        <string id="SVCLRTotalCollectedCount" text="總共蒐集了 {NUMBER} 可移除資料。"/>
+        <string id="SVCLRNothingToClean" text="沒有可以移除的資料。"/>
+        <string id="SVCLRErrorCollectingObjects" text="蒐集資料時發生錯誤。"/>
+        <string id="SVCLRStatusBackup" text="正在建立備份存檔……"/>
+        <string id="SVCLRStatusFinalizing" text="正在儲存……"/>
+        <string id="SVCLRStatusCounting" text="正在計算結果……"/>
+        <string id="SVCLRCleanResults" text="清理結果："/>
+        <string id="SVCLRStatusRemoving" text="正在移除資料……"/>
+        <string id="SVCLRCleanedObjectsCount" text="清理了 {NUMBER} 個資料。"/>
+        <string id="SVCLRWipeFailed" text="模組清除失敗！"/>
+        <string id="SVCLRRemovingBackup" text="正在移除備份存檔……"/>
+        <string id="SVCLRCleanComplete" text="清理完成。總共耗時 {NUMBER} 秒。"/>
+        <string id="SVCLRCleanTerminated" text="清理遭中斷。詳情見記錄檔。"/>
+        <string id="SVCLRSuccessLoadReminder" text="請先讀取存檔再繼續遊玩： "/>
+        <string id="SVCLRFailureLoadReminder" text="請先讀取備份存檔再繼續遊玩： "/>
+    </strings>
+</base>

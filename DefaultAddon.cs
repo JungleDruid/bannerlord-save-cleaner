@@ -16,11 +16,11 @@ internal static class DefaultAddon
 
     internal static void Register()
     {
-        var addon = new SaveCleanerAddon(SubModule.Harmony.Id, SubModule.Name,
-            new SaveCleanerAddon.BoolSetting(Settings.RemoveDisappearedHeroes, "Remove Disappeared Heroes",
-                "Remove disappeared heroes that are likely spawned by mods.", 0, true),
-            new SaveCleanerAddon.BoolSetting(Settings.RemoveAbandonedCraftedItems, "Remove Abandoned Crafted Items",
-                "Remove abandoned crafted items. The game by default keeps all the crafted items even after they are disappeared.", 1, true));
+        var addon = new SaveCleanerAddon(SubModule.Harmony.Id, "{=SVCLRSaveCleaner}Save Cleaner",
+            new SaveCleanerAddon.BoolSetting(Settings.RemoveDisappearedHeroes, "{=SVCLRRemoveDisappearedHeroes}Remove Disappeared Heroes",
+                "{=SVCLRRemoveDisappearedHeroesHint}These disappeared heroes are usually spawned by mods.", 0, true),
+            new SaveCleanerAddon.BoolSetting(Settings.RemoveAbandonedCraftedItems, "{=SVCLRRemoveAbandonedCraftedItems}Remove Abandoned Crafted Items",
+                "{=SVCLRRemoveAbandonedCraftedItemsHint}The game by default keeps all the crafted items even after they are disappeared.", 1, true));
         addon.OnPreClean += OnPreClean;
         addon.OnPostClean += OnPostClean;
         addon.Register<SubModule>();

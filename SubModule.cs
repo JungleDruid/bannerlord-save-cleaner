@@ -13,6 +13,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
+using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 
 #if DEBUG
@@ -61,20 +62,30 @@ public class SubModule : MBSubModuleBase
     protected override void OnApplicationTick(float dt)
     {
 #if DEBUG
-        if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
-            (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
-            (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
-            Input.IsKeyPressed(InputKey.B))
+        bool superKey = (Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
+                        (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
+                        (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt));
+
+        if (superKey && Input.IsKeyPressed(InputKey.B))
         {
             Debugger.Break();
         }
 
-        if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
-            (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
-            (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
-            Input.IsKeyPressed(InputKey.C))
+        if (superKey && Input.IsKeyPressed(InputKey.C))
         {
             TryStartCleanUp();
+        }
+
+        if (superKey && Input.IsKeyPressed(InputKey.O) && _settings is not null)
+        {
+            // refresh MCM menu
+            string id = _settings.SubFolder;
+            _settings.Unregister();
+            ISettingsBuilder builder = MCMSettings.AddSettings(id);
+            _settings = builder.SetOnPropertyChanged(OnPropertyChanged).BuildAsPerCampaign();
+            _settings.Register();
+            Addons.Remove(typeof(SubModule));
+            DefaultAddon.Register();
         }
 #endif
         if (_startPressed)
@@ -98,9 +109,13 @@ public class SubModule : MBSubModuleBase
     {
         if (!Addons.Values.AnyQ(a => !a.Disabled))
         {
+            _startPressed = false;
             InformationManager.ShowInquiry(new InquiryData(
-                "Error", "No available addon.", true, false,
-                "OK", null, () => _startPressed = false, () => { }));
+                new TextObject("{=SVCLRError}Error").ToString(),
+                new TextObject("{=SVCLRErrorNoAddonAvailable}No addon available.").ToString(),
+                true, false,
+                new TextObject("{=SVCLRButtonOK}OK").ToString(),
+                null, () => { }, () => { }));
             return false;
         }
 
@@ -110,8 +125,11 @@ public class SubModule : MBSubModuleBase
 
         Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
         InformationManager.ShowInquiry(new InquiryData(
-            "Confirm Clean Up", "Start the clean up progress now?", true, true,
-            "Yes", "No",
+            new TextObject("{=SVCLRDialogConfirmCleanTitle}Confirm Clean Up").ToString(),
+            new TextObject("{=SVCLRDialogConfirmCleanContent}Start the clean up progress now?").ToString(),
+            true, true,
+            new TextObject("{=SVCLRButtonYes}Yes").ToString(),
+            new TextObject("{=SVCLRButtonNo}No").ToString(),
             () => _cleaner ??= new Cleaner(CleanerMapView, Addons.Values.ToListQ()).Start(),
             () => { }));
 
@@ -122,9 +140,13 @@ public class SubModule : MBSubModuleBase
     {
         if (_wipeAddon.Disabled)
         {
+            _wipeAddon = null;
             InformationManager.ShowInquiry(new InquiryData(
-                "Error", "Wipe target is disabled.", true, false,
-                "OK", null, () => _startPressed = false, () => { }));
+                new TextObject("{=SVCLRError}Error").ToString(),
+                new TextObject("{=SVCLRErrorWipeTargetDisabled}Wipe target is disabled.").ToString(),
+                true, false,
+                new TextObject("{=SVCLRButtonOK}OK").ToString(),
+                null, () => { }, () => { }));
             return false;
         }
 
@@ -135,8 +157,12 @@ public class SubModule : MBSubModuleBase
 
         Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
         InformationManager.ShowInquiry(new InquiryData(
-            $"Confirm Wipe {addon.Name}", "Start the wipe progress now?", true, true,
-            "Yes", "No",
+            new TextObject("{=SVCLRDialogConfirmWipeTitle}Confirm Wipe {ADDON_NAME}",
+                new Dictionary<string, object> { ["ADDON_NAME"] = addon.Name }).ToString(),
+            new TextObject("{=SVCLRDialogConfirmWipeContent}Start the wipe progress now?").ToString(),
+            true, true,
+            new TextObject("{=SVCLRButtonYes}Yes").ToString(),
+            new TextObject("{=SVCLRButtonNo}No").ToString(),
             () => _cleaner ??= new Cleaner(CleanerMapView, Addons.Values.ToListQ(), addon).Start(),
             () => { }));
 
@@ -161,8 +187,11 @@ public class SubModule : MBSubModuleBase
     {
         if (Instance is null) return;
         InformationManager.ShowInquiry(new InquiryData(
-            "Confirm Action", "Go back to the world map to start the clean up process.", true, true,
-            "OK", "Cancel",
+            new TextObject("{=SVCLRDialogCleanTitle}Start Cleaning").ToString(),
+            new TextObject("{=SVCLRDialogCleanContent}Go back to the world map to start the clean up process.").ToString(),
+            true, true,
+            new TextObject("{=SVCLRButtonOK}OK").ToString(),
+            new TextObject("{=SVCLRButtonCancel}Cancel").ToString(),
             () =>
             {
                 Instance._startPressed = true;
@@ -175,8 +204,13 @@ public class SubModule : MBSubModuleBase
     {
         if (Instance is null) return;
         InformationManager.ShowInquiry(new InquiryData(
-            $"Confirm Wipe {addon.Name}", "Go back to the world map to start wipe out the mod's data.", true, true,
-            "OK", "Cancel", () =>
+            new TextObject("{=SVCLRDialogWipeTitle}Start Wiping {ADDON_NAME}", new Dictionary<string, object> { ["ADDON_NAME"] = addon.Name }).ToString(),
+            new TextObject("{=SVCLRDialogWipeContent}Go back to the world map to start wipe out the mod's data.").ToString(),
+            true,
+            true,
+            new TextObject("{=SVCLRButtonOK}OK").ToString(),
+            new TextObject("{=SVCLRButtonCancel}Cancel").ToString(),
+            () =>
             {
                 Instance._wipeAddon = addon;
                 Instance._startPressed = false;
