@@ -28,11 +28,13 @@ internal class Collector
     private readonly Dictionary<object, int> _idsOfChildContainers = new();
     private readonly List<object> _temporaryCollectedObjects = [];
     private readonly Dictionary<object, HashSet<object>> _parentMap = new();
+    private readonly Dictionary<object, HashSet<object>> _childMap = new();
 
     private bool _collected;
 
     public IReadOnlyList<object> ChildObjects => _childObjects;
     public IReadOnlyDictionary<object, HashSet<object>> ParentMap => _parentMap;
+    public IReadOnlyDictionary<object, HashSet<object>> ChildMap => _childMap;
 
     private static readonly MethodInfo GetClassDefinitionMethod = AccessTools.Method(typeof(DefinitionContext), "GetClassDefinition");
     private static readonly MethodInfo GetStructDefinitionMethod = AccessTools.Method(typeof(DefinitionContext), "GetStructDefinition");
@@ -55,13 +57,15 @@ internal class Collector
 
     private void AddParent(object child, object parent)
     {
-        if (!_parentMap.TryGetValue(child, out var parents))
-        {
-            parents = new HashSet<object>();
-            _parentMap.Add(child, parents);
-        }
+        if (_parentMap.TryGetValue(child, out var parents))
+            parents.Add(parent);
+        else
+            _parentMap.Add(child, [parent]);
 
-        parents.Add(parent);
+        if (_childMap.TryGetValue(parent, out var children))
+            children.Add(child);
+        else
+            _childMap.Add(parent, [child]);
     }
 
 

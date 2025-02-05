@@ -35,7 +35,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
     private int _messageTick;
     private bool _cleaned;
     private readonly Collector _collector = new();
-    private readonly HashSet<object> _removingObjects = [];
+    private readonly HashSet<object> _removableObjects = [];
 
     public bool Completed => _state == CleanerState.Complete && _detailState == DetailState.Ended;
 
@@ -131,21 +131,23 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             }
 
             _logger.LogDebug("Collecting references...");
-            foreach (object obj in childObjects.Where(RequireCleaning))
+            foreach (object obj in childObjects.Where(RemovableFromAddons))
             {
                 CollectReferences(obj);
             }
 
-            _logger.LogDebug($"Collected {_removingObjects.Count} removable objects.");
-            if (_removingObjects.Any())
+            FilterOutNonRemovableObjects();
+
+            _logger.LogDebug($"Collected {_removableObjects.Count} removable objects.");
+            if (_removableObjects.Any())
             {
-                var collected = Collector.GetTypeCollection(_removingObjects);
+                var collected = Collector.GetTypeCollection(_removableObjects);
                 foreach (var kv in collected.OrderByQ(kv => -kv.Value))
                 {
                     _logger.LogTrace($"Collected Removable [{kv.Key.Name}]: {kv.Value}");
                 }
 
-                InformationManager.DisplayMessage(new InformationMessage($"Collected {_removingObjects.Count} removable objects, cleaning up...", Colors.Cyan));
+                InformationManager.DisplayMessage(new InformationMessage($"Collected {_removableObjects.Count} removable objects, cleaning up...", Colors.Cyan));
                 FinishState();
             }
             else
@@ -285,17 +287,33 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         FinishState();
     }
 
+    private void FilterOutNonRemovableObjects()
+    {
+        while (_removableObjects.Count > 0)
+        {
+            var failedObjects = _removableObjects.WhereQ(obj => !RemoveReferences(obj, true)).ToListQ();
+            if (!failedObjects.AnyQ()) return;
+            failedObjects.Do(FlushFromRemovables);
+        }
+    }
+
+    private void FlushFromRemovables(object obj)
+    {
+        _removableObjects.Remove(obj);
+        if (!_collector.ChildMap.TryGetValue(obj, out var set)) return;
+        set.WhereQ(_removableObjects.Contains).Do(FlushFromRemovables);
+    }
+
     private void Removing()
     {
         if (!StateGate("Removing objects...")) return;
 
-        foreach (object obj in _removingObjects)
+        if (_removableObjects.WhereQ(o => !RemoveReferences(o, false)).AnyQ())
         {
-            _logger.LogTrace($"Removing {obj.GetType()}: {obj}");
-            CollectReferences(obj, true);
+            throw new InvalidOperationException("Removing objects failed, but should never happen.");
         }
 
-        InformationManager.DisplayMessage(new InformationMessage($"Cleaned {_removingObjects.Count} objects", Colors.Cyan));
+        InformationManager.DisplayMessage(new InformationMessage($"Cleaned {_removableObjects.Count} objects", Colors.Cyan));
         _cleaned = true;
         FinishState();
     }
@@ -307,12 +325,12 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
 
     private bool SafeToRemove(object obj)
     {
-        if (_removingObjects.Contains(obj)) return true;
+        if (_removableObjects.Contains(obj)) return true;
         if (obj.GetType().IsContainer()) return false;
         switch (obj)
         {
             case LogEntry:
-            case CharacterObject { HeroObject: not null } characterObject when _removingObjects.Contains(characterObject.HeroObject):
+            case CharacterObject { HeroObject: not null } characterObject when _removableObjects.Contains(characterObject.HeroObject):
                 return true;
             default:
                 return false;
@@ -386,79 +404,85 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         FinishState();
     }
 
-    private void CollectReferences(object obj, bool remove = false)
+    private void CollectReferences(object obj)
     {
-        if (!remove)
+        if (!_removableObjects.Add(obj)) return;
+        if (obj.GetType().IsContainer()) return;
+        _logger.LogTrace($"Collecting references of [{obj.GetType()}]{obj}...");
+
+        if (_collector.ParentMap.TryGetValue(obj, out var set))
         {
-            if (!_removingObjects.Add(obj)) return;
-            if (obj.GetType().IsContainer()) return;
-            _logger.LogTrace($"Collecting references of [{obj.GetType()}]{obj}...");
+            set.Where(SafeToRemove).Do(CollectReferences);
         }
         else
         {
-            _logger.LogTrace($"Removing references of [{obj.GetType()}]{obj}...");
-            if (obj is MBObjectBase mbObject)
-            {
-                MBObjectManager.Instance.UnregisterObject(mbObject);
-            }
+            _logger.LogWarning($"Could find parents of [{obj.GetType()}]{obj}");
+        }
+    }
+
+    private bool RemoveReferences(object obj, bool dryRun)
+    {
+        _logger.LogTrace($"Removing references of [{obj.GetType()}]{obj}...");
+        if (!dryRun && obj is MBObjectBase mbObject)
+        {
+            MBObjectManager.Instance.UnregisterObject(mbObject);
         }
 
         if (_collector.ParentMap.TryGetValue(obj, out var set))
         {
-            foreach (object parent in set)
+            foreach (object parent in set.Where(parent => !_removableObjects.Contains(parent) && !RemoveFromParent(obj, parent, dryRun)))
             {
-                if (remove)
-                {
-                    if (_removingObjects.Contains(parent)) continue;
-                    if (!RemoveFromParent(obj, parent))
-                    {
-                        _logger.LogWarning($"Failed to remove [{obj.GetType()}]{obj} from [{parent.GetType()}]{parent}");
-                    }
-                }
-                else
-                {
-                    if (SafeToRemove(parent)) CollectReferences(parent);
-                }
+                _logger.LogWarning($"Failed to remove [{obj.GetType()}]{obj} from [{parent.GetType()}]{parent}");
+                return false;
             }
         }
-#if DEBUG
         else
         {
-            Debugger.Break();
+            _logger.LogWarning($"Could find parents of [{obj.GetType()}]{obj}");
+            return false;
         }
-#endif
+
+        return true;
     }
 
-    private bool RemoveFromParent(object obj, object parent)
+    private bool RemoveFromParent(object obj, object parent, bool dryRun)
     {
         _logger.LogTrace($"Removing [{obj.GetType()}]{obj} from [{parent.GetType()}]{parent}");
         bool removed = false;
         if (parent.GetType().IsContainer(out ContainerType containerType))
         {
-            return RemoveFromContainer(obj, parent, containerType);
+            return RemoveFromContainer(obj, parent, containerType, dryRun);
         }
 
         foreach (var field in parent.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
         {
             if (field.GetValue(parent) != obj) continue;
-            field.SetValue(parent, null);
+            if (!dryRun) field.SetValue(parent, null);
             removed = true;
         }
 
         return removed;
     }
 
-    private bool RemoveFromContainer(object obj, object parent, ContainerType containerType)
+    private bool RemoveFromContainer(object obj, object parent, ContainerType containerType, bool dryRun)
     {
         bool removed = false;
+        Type parentType = parent.GetType();
         switch (containerType)
         {
             case ContainerType.CustomList:
             case ContainerType.CustomReadOnlyList:
             case ContainerType.List:
-            case ContainerType.Dictionary:
-                parent.GetType().GetMethod("Remove")!.Invoke(parent, [obj]);
+                if (!dryRun) parentType.GetMethod("Remove")!.Invoke(parent, [obj]);
                 removed = true;
+                break;
+            case ContainerType.Dictionary:
+                if (parentType.GenericTypeArguments.Length == 2 && parentType.GenericTypeArguments[0] == obj.GetType())
+                {
+                    if (!dryRun) parentType.GetMethod("Remove")!.Invoke(parent, [obj]);
+                    removed = true;
+                }
+
                 break;
             case ContainerType.Array:
                 if (parent is TroopRosterElement[] troopRosterElements)
@@ -468,16 +492,10 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
                         foreach (object rosterObject in set)
                         {
                             if (rosterObject is not TroopRoster roster) continue;
-                            roster.RemoveTroop((CharacterObject)obj);
+                            if (!dryRun) roster.RemoveTroop((CharacterObject)obj);
                             removed = true;
                         }
                     }
-#if DEBUG
-                    else
-                    {
-                        Debugger.Break();
-                    }
-#endif
                 }
                 else if (parent is ItemRosterElement[] itemRosterElements)
                 {
@@ -486,37 +504,19 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
                         foreach (object rosterObject in set)
                         {
                             if (rosterObject is not ItemRoster roster) continue;
-                            roster.RemoveIf(e => e.EquipmentElement.Item == obj ? e.Amount : 0);
+                            if (!dryRun) roster.RemoveIf(e => e.EquipmentElement.Item == obj ? e.Amount : 0);
                             removed = true;
                         }
                     }
                 }
-                else if (parent is EquipmentElement[])
-                {
-                }
-#if DEBUG
-                else
-                {
-                    Debugger.Break();
-                }
-#endif
 
-                break;
-            case ContainerType.Queue:
-#if DEBUG
-                Debugger.Break();
-#endif
-                break;
-            case ContainerType.None:
-            default:
-                _logger.LogError("Unable to remove from container type: " + containerType);
                 break;
         }
 
         return removed;
     }
 
-    private bool RequireCleaning(object obj)
+    private bool RemovableFromAddons(object obj)
     {
         return !addons.WhereQ(a => !a.Disabled).Any(addon => addon.IsEssential(obj)) && addons.Any(addon => addon.IsRemovable(obj));
     }
