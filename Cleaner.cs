@@ -6,6 +6,7 @@ using System.Reflection;
 using Bannerlord.ButterLib.Logger.Extensions;
 using HarmonyLib;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Internal;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.LogEntries;
 using TaleWorlds.CampaignSystem.Roster;
@@ -35,7 +36,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
     private int _messageTick;
     private bool _cleaned;
     private readonly Collector _collector = new();
-    private readonly HashSet<object> _removableObjects = [];
+    private readonly Dictionary<object, SaveCleanerAddon> _removableObjects = [];
 
     public bool Completed => _state == CleanerState.Complete && _detailState == DetailState.Ended;
 
@@ -54,7 +55,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         ForwardState();
         mapView.SetActive(true);
         mapView.SetText(new TextObject("Clean Started"));
-        InformationManager.DisplayMessage(new InformationMessage("======= Clean started =======", Colors.Yellow));
+        LogAndMessage("======= Clean started =======", LogLevel.Information);
 
         return this;
     }
@@ -131,9 +132,11 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             }
 
             _logger.LogDebug("Collecting references...");
-            foreach (object obj in childObjects.Where(RemovableFromAddons))
+            foreach (object obj in childObjects)
             {
-                CollectReferences(obj);
+                SaveCleanerAddon addon = RemovableFromAddons(obj);
+                if (addon is null) continue;
+                CollectReferences(obj, addon);
             }
 
             FilterOutNonRemovableObjects();
@@ -141,25 +144,30 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             _logger.LogDebug($"Collected {_removableObjects.Count} removable objects.");
             if (_removableObjects.Any())
             {
-                var collected = Collector.GetTypeCollection(_removableObjects);
+                var collected = Collector.GetTypeCollection(_removableObjects.Keys);
                 foreach (var kv in collected.OrderByQ(kv => -kv.Value))
                 {
                     _logger.LogTrace($"Collected Removable [{kv.Key.Name}]: {kv.Value}");
                 }
 
-                InformationManager.DisplayMessage(new InformationMessage($"Collected {_removableObjects.Count} removable objects, cleaning up...", Colors.Cyan));
+                foreach (var grouping in _removableObjects.GroupBy(kv => kv.Value))
+                {
+                    LogAndMessage($"{grouping.Key} has collected {grouping.Count()} removable objects.");
+                }
+
+                LogAndMessage($"Collected {_removableObjects.Count} removable objects in total.");
                 FinishState();
             }
             else
             {
-                InformationManager.DisplayMessage(new InformationMessage("Nothing to clean.", Colors.Cyan));
+                LogAndMessage("Nothing to clean.", LogLevel.Information);
                 if (wiping is null) OnComplete();
                 else ChangeState(CleanerState.Finalizing);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while collecting objects.");
+            LogAndMessage("Error while collecting objects.", LogLevel.Error, ex);
             OnError();
         }
     }
@@ -169,7 +177,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         switch (_detailState)
         {
             case DetailState.None:
-                InformationManager.DisplayMessage(new InformationMessage(startMessage, Colors.Cyan));
+                LogAndMessage(startMessage);
                 mapView.SetText(new TextObject(startMessage));
                 _detailState = DetailState.Starting;
                 return false;
@@ -275,13 +283,11 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         }
 
         string message = "Clean results:";
-        _logger.LogInformation(message);
-        InformationManager.DisplayMessage(new InformationMessage(message, Colors.Cyan));
+        LogAndMessage(message, LogLevel.Information);
         foreach (var kv in result.OrderByQ(kv => -kv.Value))
         {
             message = $"[{kv.Key.Name}]: {kv.Value}";
-            _logger.LogInformation(message);
-            InformationManager.DisplayMessage(new InformationMessage(message, Colors.Cyan));
+            LogAndMessage(message, LogLevel.Information);
         }
 
         FinishState();
@@ -291,9 +297,9 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
     {
         while (_removableObjects.Count > 0)
         {
-            var failedObjects = _removableObjects.WhereQ(obj => !RemoveReferences(obj, true)).ToListQ();
+            var failedObjects = _removableObjects.WhereQ(kv => !RemoveReferences(kv.Key, kv.Value, true)).ToListQ();
             if (!failedObjects.AnyQ()) return;
-            failedObjects.Do(FlushFromRemovables);
+            failedObjects.Select(kv => kv.Key).Do(FlushFromRemovables);
         }
     }
 
@@ -301,19 +307,19 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
     {
         _removableObjects.Remove(obj);
         if (!_collector.ChildMap.TryGetValue(obj, out var set)) return;
-        set.WhereQ(_removableObjects.Contains).Do(FlushFromRemovables);
+        set.WhereQ(_removableObjects.ContainsKey).Do(FlushFromRemovables);
     }
 
     private void Removing()
     {
         if (!StateGate("Removing objects...")) return;
 
-        if (_removableObjects.WhereQ(o => !RemoveReferences(o, false)).AnyQ())
+        if (_removableObjects.WhereQ(kv => !RemoveReferences(kv.Key, kv.Value, false)).AnyQ())
         {
             throw new InvalidOperationException("Removing objects failed, but should never happen.");
         }
 
-        InformationManager.DisplayMessage(new InformationMessage($"Cleaned {_removableObjects.Count} objects", Colors.Cyan));
+        LogAndMessage($"Cleaned {_removableObjects.Count} objects", LogLevel.Information);
         _cleaned = true;
         FinishState();
     }
@@ -325,12 +331,12 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
 
     private bool SafeToRemove(object obj)
     {
-        if (_removableObjects.Contains(obj)) return true;
+        if (_removableObjects.ContainsKey(obj)) return true;
         if (obj.GetType().IsContainer()) return false;
         switch (obj)
         {
             case LogEntry:
-            case CharacterObject { HeroObject: not null } characterObject when _removableObjects.Contains(characterObject.HeroObject):
+            case CharacterObject { HeroObject: not null } characterObject when _removableObjects.ContainsKey(characterObject.HeroObject):
                 return true;
             default:
                 return false;
@@ -345,15 +351,14 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         if (!isSuccessful)
         {
             string message = $"Failed to {(_state == CleanerState.BackingUp ? "backup before" : "save after ")} cleaning.";
-            InformationManager.DisplayMessage(new InformationMessage(message, Colors.Red));
-            _logger.LogError(message);
+            LogAndMessage(message, LogLevel.Error);
             OnError();
             return;
         }
 
         if (_state == CleanerState.BackingUp && wiping?.Wipe() == false)
         {
-            InformationManager.DisplayMessage(new InformationMessage("Wipe failed!", Colors.Red));
+            LogAndMessage("Wipe failed!", LogLevel.Error);
             OnError();
             return;
         }
@@ -370,14 +375,14 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             SaveGameFileInfo save = MBSaveLoad.GetSaveFileWithName(_backUpSave);
             if (save is not null)
             {
-                InformationManager.DisplayMessage(new InformationMessage("Removing backup save...", Colors.Cyan));
+                LogAndMessage("Removing backup save...");
                 MBSaveLoad.DeleteSaveGame(_backUpSave);
             }
         }
 
         ChangeState(CleanerState.Complete);
         _stopwatch.Stop();
-        InformationManager.DisplayMessage(new InformationMessage($"Clean ended. Took {_stopwatch.ElapsedMilliseconds}ms to finish.", Colors.Yellow));
+        LogAndMessage($"Clean ended. Took {_stopwatch.ElapsedMilliseconds / 1000f:F2} seconds to finish.", LogLevel.Information);
         if (_finishSave is not null)
         {
             InformationManager.DisplayMessage(new InformationMessage($"Please load the save before continue playing: {_finishSave}", Colors.Yellow));
@@ -392,27 +397,30 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         Campaign.Current.SetTimeControlModeLock(false);
         ChangeState(CleanerState.Complete);
         _stopwatch.Stop();
-        _logger.LogError("Clean terminated dur to errors.");
-        InformationManager.DisplayMessage(new InformationMessage("Clean terminated. See logs for details.", Colors.Red));
+        LogAndMessage("Clean terminated. See logs for details.", LogLevel.Error);
 
         if (_backUpSave is not null)
         {
-            InformationManager.DisplayMessage(new InformationMessage("Reloading the backup save is recommended: " + _backUpSave, Colors.Red));
+            InformationManager.DisplayMessage(new InformationMessage("Please load the backup save before continue playing: " + _backUpSave, Colors.Red));
         }
 
         mapView.SetActive(false);
         FinishState();
     }
 
-    private void CollectReferences(object obj)
+    private void CollectReferences(object obj, SaveCleanerAddon sourceAddon)
     {
-        if (!_removableObjects.Add(obj)) return;
         if (obj.GetType().IsContainer()) return;
+        if (_removableObjects.ContainsKey(obj)) return;
+        _removableObjects.Add(obj, sourceAddon);
         _logger.LogTrace($"Collecting references of [{obj.GetType()}]{obj}...");
 
         if (_collector.ParentMap.TryGetValue(obj, out var set))
         {
-            set.Where(SafeToRemove).Do(CollectReferences);
+            foreach (object parent in set.Where(SafeToRemove))
+            {
+                CollectReferences(parent, sourceAddon);
+            }
         }
         else
         {
@@ -420,9 +428,9 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         }
     }
 
-    private bool RemoveReferences(object obj, bool dryRun)
+    private bool RemoveReferences(object obj, SaveCleanerAddon source, bool dryRun)
     {
-        _logger.LogTrace($"Removing references of [{obj.GetType()}]{obj}...");
+        if (!dryRun) _logger.LogTrace($"[{source}] Removing references of [{obj.GetType()}]{obj}...");
         if (!dryRun && obj is MBObjectBase mbObject)
         {
             MBObjectManager.Instance.UnregisterObject(mbObject);
@@ -430,7 +438,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
 
         if (_collector.ParentMap.TryGetValue(obj, out var set))
         {
-            foreach (object parent in set.Where(parent => !_removableObjects.Contains(parent) && !RemoveFromParent(obj, parent, dryRun)))
+            foreach (object parent in set.Where(parent => !_removableObjects.ContainsKey(parent) && !RemoveFromParent(obj, parent, dryRun)))
             {
                 _logger.LogWarning($"Failed to remove [{obj.GetType()}]{obj} from [{parent.GetType()}]{parent}");
                 return false;
@@ -516,9 +524,10 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         return removed;
     }
 
-    private bool RemovableFromAddons(object obj)
+    private SaveCleanerAddon RemovableFromAddons(object obj)
     {
-        return !addons.WhereQ(a => !a.Disabled).Any(addon => addon.IsEssential(obj)) && addons.Any(addon => addon.IsRemovable(obj));
+        var enabledAddons = addons.WhereQ(a => !a.Disabled).ToListQ();
+        return enabledAddons.Any(addon => addon.IsEssential(obj)) ? null : enabledAddons.FirstOrDefaultQ(addon => addon.IsRemovable(obj));
     }
 
     private void ChangeState(CleanerState state)
@@ -535,6 +544,30 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         {
             ChangeState(state + 1);
         }
+    }
+
+    private void LogAndMessage(string message, LogLevel level = LogLevel.Debug, Exception exception = null)
+    {
+        Color color = level switch
+        {
+            LogLevel.None => Colors.Black,
+            LogLevel.Trace => Colors.Gray,
+            LogLevel.Debug => Colors.White,
+            LogLevel.Information => Colors.Cyan,
+            LogLevel.Warning => Colors.Yellow,
+            LogLevel.Error => Colors.Red,
+            LogLevel.Critical => Colors.Magenta,
+            _ => throw new ArgumentOutOfRangeException(nameof(level), level, null)
+        };
+
+        _logger.LogInformation("");
+        _logger.Log(level, 0, new FormattedLogValues(message), exception, LogFormatter);
+        InformationManager.DisplayMessage(new InformationMessage(message, color));
+    }
+
+    private static string LogFormatter(FormattedLogValues state, Exception exception)
+    {
+        return state.ToString();
     }
 
     public enum CleanerState
