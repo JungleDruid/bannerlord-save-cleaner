@@ -7,7 +7,6 @@ using System.Text.RegularExpressions;
 using Bannerlord.ButterLib.Logger.Extensions;
 using HarmonyLib;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Internal;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.LogEntries;
 using TaleWorlds.CampaignSystem.Roster;
@@ -696,13 +695,9 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             _ => throw new ArgumentOutOfRangeException(nameof(level), level, null)
         };
 
-        _logger.Log(level, 0, new FormattedLogValues(logMessage), exception, LogFormatter);
-        InformationManager.DisplayMessage(new InformationMessage(gameMessage, color));
-    }
+        _logger.Log(level, logMessage, exception);
 
-    private static string LogFormatter(FormattedLogValues state, Exception exception)
-    {
-        return state.ToString();
+        InformationManager.DisplayMessage(new InformationMessage(gameMessage, color));
     }
 
     public enum CleanerState

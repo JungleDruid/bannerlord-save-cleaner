@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Internal;
 using TaleWorlds.MountAndBlade;
 
 // ReSharper disable ClassNeverInstantiated.Global
@@ -163,12 +162,7 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
     /// <param name="exception"></param>
     public void Log(string message, LogLevel logLevel, Exception exception = null)
     {
-        _logger.Log(logLevel, 0, new FormattedLogValues($"[{Name}({Id}] {message}"), exception, LogFormatter);
-    }
-
-    private static string LogFormatter(FormattedLogValues state, Exception exception)
-    {
-        return state.ToString();
+        _logger.Log(logLevel, message, exception);
     }
 
     internal bool IsRemovable(object o)
