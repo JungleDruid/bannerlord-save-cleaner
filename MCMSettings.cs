@@ -31,12 +31,12 @@ internal static class MCMSettings
             .SetFormat("json2")
             .SetFolderName(SubModule.Name)
             .SetSubFolder(id)
-            .CreateGroup("{=SVCLRGroupMain} Main/{=SVCLRCleanerMenu}Cleaner", BuildButtonGroup)
+            .CreateGroup("{=SVCLRGroupMain} Main/{=SVCLRCleanerMenu}Cleaner", BuildCleanerGroup)
             .BuildModGroups(modPresetBuilder)
             .CreatePreset(BaseSettings.DefaultPresetId, BaseSettings.DefaultPresetName, builder
                 => modPresetBuilder.BuildDefaults(builder));
 
-        void BuildButtonGroup(ISettingsPropertyGroupBuilder builder)
+        void BuildCleanerGroup(ISettingsPropertyGroupBuilder builder)
             => builder
                 .SetGroupOrder(0)
                 .AddButton(
@@ -45,7 +45,12 @@ internal static class MCMSettings
                     new ProxyRef<Action>(() => SubModule.OnStartCleanPressed, null),
                     "{=SVCLRStartButton}Start",
                     propBuilder => propBuilder
-                        .SetHintText("{=SVCLRStartCleaningHint}Will start cleaning after closing the menu."));
+                        .SetHintText("{=SVCLRStartCleaningHint}Will start cleaning after closing the menu."))
+                .AddInteger("compatibility_level",
+                    "{=SVCLRCompatibilityLevel}Compatibility Level",
+                    0, 3, new ProxyRef<int>(() => GlobalOptions.CompatibilityLevel, value => GlobalOptions.CompatibilityLevel = value),
+                    propBuilder => propBuilder.SetHintText(
+                        "{=SVCLRCompatibilityLevelHint}Higher level will likely reduce the amount of cleanable objects, but safer with mods without addon support."));
     }
 
     private static ISettingsBuilder BuildModGroups(this ISettingsBuilder builder, ModPresetBuilder modPresetBuilder)

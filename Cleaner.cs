@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Bannerlord.ButterLib.Logger.Extensions;
 using HarmonyLib;
 using Microsoft.Extensions.Logging;
@@ -21,6 +22,8 @@ namespace SaveCleaner;
 
 internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, SaveCleanerAddon wiping = null)
 {
+    private static readonly Regex OfficialNamespaceRegex = new(@"^(TaleWorlds|StoryMode|SandBox|System)\b");
+
     private readonly ILogger _logger = LogFactory.Get<Cleaner>();
     private static string PlayerClanAndName => $"{Clan.PlayerClan.Name.ToString().ToLower()}_{Hero.MainHero.Name.ToString().ToLower()}";
     private string ActionName => wiping == null ? "cleaning" : $"wiping_{wiping.Name}";
@@ -37,6 +40,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
     private bool _cleaned;
     private readonly Collector _collector = new();
     private readonly Dictionary<object, SaveCleanerAddon> _removableObjects = [];
+    private readonly Dictionary<object, object> _blockedWithCompatibilityLevel = new();
 
     public bool Completed => _state == CleanerState.Complete && _detailState == DetailState.Ended;
 
@@ -106,6 +110,24 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             .FirstOrDefault(o => o != null);
     }
 
+    private bool IsUnofficial(object obj, object source)
+    {
+        string ns = obj.GetType().Namespace;
+        bool result = ns is null || !(OfficialNamespaceRegex.IsMatch(ns));
+        if (!result) return false;
+
+        SubModule.Instance.Logger.LogDebug($"[Compatibility: {GlobalOptions.CompatibilityLevel}] Removal of [{source.GetType().Name}]{source} is blocked by [{obj.GetType()}]{obj}");
+        _blockedWithCompatibilityLevel[source] = obj;
+        return true;
+    }
+
+    internal bool CheckCompatibility(object obj)
+    {
+        if (GlobalOptions.CompatibilityLevel <= 0) return true;
+        object parentFromOtherMods = GetFirstParent(obj, p => IsUnofficial(p, obj), GlobalOptions.CompatibilityLevel, []);
+        return parentFromOtherMods is null;
+    }
+
     private void Collecting()
     {
         if (!StateGate(new TextObject("{=SVCLRStatusCollecting}Collecting objects..."))) return;
@@ -168,6 +190,24 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
                 LogAndMessage($"Collected {_removableObjects.Count} removable objects in total.",
                     new TextObject("{=SVCLRTotalCollectedCount}Collected {NUMBER} removable objects in total.",
                         new Dictionary<string, object> { ["NUMBER"] = _removableObjects.Count, }).ToString());
+
+                if (GlobalOptions.CompatibilityLevel > 0)
+                {
+                    LogAndMessage($"{_blockedWithCompatibilityLevel.Count} of removable objects were blocked with compatibility level {GlobalOptions.CompatibilityLevel}",
+                        new TextObject("{=SVCLRCompatibilityBlockCount}{NUMBER} of removable objects were blocked with compability level {LEVEL}",
+                            new Dictionary<string, object> { ["NUMBER"] = _blockedWithCompatibilityLevel.Count, ["LEVEL"] = GlobalOptions.CompatibilityLevel }).ToString(),
+                        LogLevel.Information);
+                    foreach (var g in _blockedWithCompatibilityLevel.GroupBy(kv => kv.Value.GetType().Assembly, kv => kv))
+                    {
+                        string dll = g.Key.Modules.First().Name;
+                        foreach (var tg in g.GroupBy(g => g.Key.GetType()))
+                        {
+                            string message = $"[{dll}] is blocking {tg.Count()} [{tg.Key.Name}] from removal.";
+                            LogAndMessage(message, message, LogLevel.Warning);
+                        }
+                    }
+                }
+
                 FinishState();
             }
             else
@@ -191,7 +231,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         switch (_detailState)
         {
             case DetailState.None:
-                LogAndMessage(startMessage.Value.Substring(startMessage.Value.IndexOf('}')), startMessage.ToString());
+                LogAndMessage(startMessage.Value.Substring(startMessage.Value.IndexOf('}') + 1), startMessage.ToString());
                 mapView.SetText(startMessage);
                 _detailState = DetailState.Starting;
                 return false;
@@ -312,7 +352,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
     {
         while (_removableObjects.Count > 0)
         {
-            var failedObjects = _removableObjects.WhereQ(kv => !RemoveReferences(kv.Key, kv.Value, true)).ToListQ();
+            var failedObjects = _removableObjects.WhereQ(kv => !RemoveReferences(kv.Key, kv.Value, true) || !CheckCompatibility(kv.Key)).ToListQ();
             if (!failedObjects.AnyQ()) return;
             failedObjects.Select(kv => kv.Key).Do(FlushFromRemovables);
         }
@@ -456,7 +496,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
 
     private bool RemoveReferences(object obj, SaveCleanerAddon source, bool dryRun)
     {
-        if (!dryRun) _logger.LogTrace($"[{source}] Removing references of [{obj.GetType()}]{obj}...");
+        if (!dryRun) _logger.LogTrace($"[{source}] Removing references of [{obj.GetType().Name}]{obj}...");
         if (!dryRun && obj is MBObjectBase mbObject)
         {
             MBObjectManager.Instance.UnregisterObject(mbObject);
@@ -466,7 +506,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         {
             foreach (object parent in set.Where(parent => !_removableObjects.ContainsKey(parent) && !RemoveFromParent(obj, parent, dryRun)))
             {
-                _logger.LogWarning($"Failed to remove [{obj.GetType()}]{obj} from [{parent.GetType()}]{parent}");
+                _logger.LogWarning($"Failed to remove [{obj.GetType().Name}]{obj} from [{parent.GetType()}]{parent}");
                 return false;
             }
         }

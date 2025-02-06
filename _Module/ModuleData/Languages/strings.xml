@@ -50,5 +50,7 @@
         <string id="SVCLRCleanTerminated" text="Clean terminated. See logs for details."/>
         <string id="SVCLRSuccessLoadReminder" text="Please load the save before continue playing: "/>
         <string id="SVCLRFailureLoadReminder" text="Please load the backup save before continue playing: "/>
+        <string id="SVCLRCompatibilityMode" text="Compatibility Mode"/>
+        <string id="SVCLRCompatibilityModeHint" text="This will reduce the likelihood of having issues with other mods after cleaning"/>
     </strings>
 </base>

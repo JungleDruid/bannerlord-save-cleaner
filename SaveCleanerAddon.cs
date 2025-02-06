@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Internal;
 using TaleWorlds.MountAndBlade;
 
 // ReSharper disable ClassNeverInstantiated.Global
@@ -27,6 +29,7 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
 
     public string Id { get; } = id;
     public string Name { get; } = name;
+    private readonly ILogger _logger = LogFactory.Get<SaveCleanerAddon>();
     private readonly ImmutableDictionary<string, ISetting> _settings = settings.ToImmutableDictionary(s => s.Id, s => s);
     private Cleaner _cleaner;
     internal IEnumerable<ISetting> Settings => _settings.Values;
@@ -150,6 +153,22 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
     public void ClearEssentialPredicates()
     {
         Essential = null;
+    }
+
+    /// <summary>
+    /// Print a message to SaveCleaner.log
+    /// </summary>
+    /// <param name="message"></param>
+    /// <param name="logLevel"></param>
+    /// <param name="exception"></param>
+    public void Log(string message, LogLevel logLevel, Exception exception = null)
+    {
+        _logger.Log(logLevel, 0, new FormattedLogValues($"[{Name}({Id}] {message}"), exception, LogFormatter);
+    }
+
+    private static string LogFormatter(FormattedLogValues state, Exception exception)
+    {
+        return state.ToString();
     }
 
     internal bool IsRemovable(object o)

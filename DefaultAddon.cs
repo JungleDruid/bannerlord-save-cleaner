@@ -2,11 +2,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Bannerlord.ButterLib.Logger.Extensions;
+using Microsoft.Extensions.Logging;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
+using TaleWorlds.Localization;
 
 namespace SaveCleaner;
 
@@ -18,9 +22,9 @@ internal static class DefaultAddon
     {
         var addon = new SaveCleanerAddon(SubModule.Harmony.Id, "{=SVCLRSaveCleaner}Save Cleaner",
             new SaveCleanerAddon.BoolSetting(Settings.RemoveDisappearedHeroes, "{=SVCLRRemoveDisappearedHeroes}Remove Disappeared Heroes",
-                "{=SVCLRRemoveDisappearedHeroesHint}These disappeared heroes are usually spawned by mods.", 0, true),
+                "{=SVCLRRemoveDisappearedHeroesHint}These disappeared heroes are usually spawned by mods.", 1, true),
             new SaveCleanerAddon.BoolSetting(Settings.RemoveAbandonedCraftedItems, "{=SVCLRRemoveAbandonedCraftedItems}Remove Abandoned Crafted Items",
-                "{=SVCLRRemoveAbandonedCraftedItemsHint}The game by default keeps all the crafted items even after they are disappeared.", 1, true));
+                "{=SVCLRRemoveAbandonedCraftedItemsHint}The game by default keeps all the crafted items even after they are disappeared.", 2, true));
         addon.OnPreClean += OnPreClean;
         addon.OnPostClean += OnPostClean;
         addon.Register<SubModule>();
@@ -43,6 +47,7 @@ internal static class DefaultAddon
 
     private static bool FillVault(SaveCleanerAddon addon)
     {
+        Vault.Clear();
         if (addon.GetValue<bool>(Settings.RemoveDisappearedHeroes))
         {
             object item = typeof(CraftingCampaignBehavior)
@@ -64,21 +69,16 @@ internal static class DefaultAddon
 
     private static bool OnPostClean(SaveCleanerAddon addon)
     {
-        Vault.Clear();
-
         return true;
     }
 
     private static bool RemoveDisappearedHeroes(SaveCleanerAddon addon, object o)
     {
-        if (o is Hero hero)
-        {
-            return hero is { IsActive: false, PartyBelongedTo: null, CurrentSettlement: null } &&
-                   !Hero.AllAliveHeroes.Contains(hero) &&
-                   !Hero.DeadOrDisabledHeroes.Contains(hero);
-        }
-
-        return false;
+        if (o is not Hero hero) return false;
+        if (hero is not { IsActive: false, IsAlive: false, PartyBelongedTo: null, CurrentSettlement: null } ||
+            Hero.AllAliveHeroes.Contains(hero) || Hero.DeadOrDisabledHeroes.Contains(hero))
+            return false;
+        return true;
     }
 
     private static bool RemoveAbandonedCraftedItems(SaveCleanerAddon addon, object obj)
