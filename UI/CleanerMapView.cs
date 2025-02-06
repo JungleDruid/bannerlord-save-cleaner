@@ -3,7 +3,7 @@ using TaleWorlds.Engine.GauntletUI;
 using TaleWorlds.Localization;
 using TaleWorlds.ScreenSystem;
 
-namespace SaveCleaner;
+namespace SaveCleaner.UI;
 
 public class CleanerMapView : MapView
 {

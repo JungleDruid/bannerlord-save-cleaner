@@ -3,7 +3,7 @@ using TaleWorlds.Localization;
 
 // ReSharper disable UnusedMember.Global
 
-namespace SaveCleaner;
+namespace SaveCleaner.UI;
 
 public class SaveCleanerVM : ViewModel
 {
