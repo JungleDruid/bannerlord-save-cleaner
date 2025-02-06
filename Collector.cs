@@ -22,7 +22,6 @@ internal class Collector
     private Queue<object> _objectsToIterate;
     private object _rootObject;
     private readonly DefinitionContext _definitionContext = new();
-    private readonly List<object> _childObjects = [];
     private readonly Dictionary<object, int> _idsOfChildObjects = new();
     private readonly List<object> _childContainers = [];
     private readonly Dictionary<object, int> _idsOfChildContainers = new();
@@ -32,7 +31,7 @@ internal class Collector
 
     private bool _collected;
 
-    public IReadOnlyList<object> ChildObjects => _childObjects;
+    internal List<object> ChildObjects { get; set; } = [];
     public IReadOnlyDictionary<object, HashSet<object>> ParentMap => _parentMap;
     public IReadOnlyDictionary<object, HashSet<object>> ChildMap => _childMap;
 
@@ -55,7 +54,7 @@ internal class Collector
         return (ContainerDefinition)GetContainerDefinitionMethod.Invoke(_definitionContext, [type]);
     }
 
-    private void AddParent(object child, object parent)
+    internal void AddParent(object child, object parent)
     {
         if (_parentMap.TryGetValue(child, out var parents))
             parents.Add(parent);
@@ -99,8 +98,8 @@ internal class Collector
     {
         if (_idsOfChildObjects.ContainsKey(parent))
             return;
-        int count = _childObjects.Count;
-        _childObjects.Add(parent);
+        int count = ChildObjects.Count;
+        ChildObjects.Add(parent);
         _idsOfChildObjects.Add(parent, count);
         Type type = parent.GetType();
 

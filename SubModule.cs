@@ -15,6 +15,7 @@ using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.SaveSystem.Save;
 
 #if DEBUG
 using System.Diagnostics;
@@ -31,7 +32,6 @@ public class SubModule : MBSubModuleBase
     private ILogger _logger;
     internal ILogger Logger => _logger ??= LogFactory.Get<SubModule>();
     public static SubModule Instance { get; private set; }
-    private Cleaner _cleaner;
     public SaveEventReceiver SaveEventReceiver { get; } = new();
     private CleanerMapView CleanerMapView { get; set; }
     [CanBeNull] private FluentPerCampaignSettings _settings;
@@ -40,6 +40,8 @@ public class SubModule : MBSubModuleBase
     private SaveCleanerAddon _wipeAddon;
     private bool CanCleanUp => MapScreen.Instance?.IsActive == true && CleanerMapView is not null && !CleanerMapView.IsFinalized;
 
+    public bool IsFastCollector { get; private set; }
+    internal Cleaner CurrentCleaner { get; private set; }
 
     private void OnServiceRegistration()
     {
@@ -51,7 +53,32 @@ public class SubModule : MBSubModuleBase
         Instance = this;
         OnServiceRegistration();
         Harmony.PatchAll(Assembly.GetExecutingAssembly());
+        TryCollectorPatches();
         DefaultAddon.Register();
+    }
+
+    private void TryCollectorPatches()
+    {
+        try
+        {
+            MethodInfo original = AccessTools.Method(typeof(SaveContext), "CollectObjects", [typeof(object)]);
+            MethodInfo patch = AccessTools.Method(typeof(Patches.SaveContextCollectObjectsPatch), nameof(Patches.SaveContextCollectObjectsPatch.Transpiler));
+            Harmony.Patch(original, transpiler: patch);
+
+            original = AccessTools.Method(typeof(SaveContext), "CollectContainerObjects");
+            patch = AccessTools.Method(typeof(Patches.SaveContextCollectContainerObjectsPatch), nameof(Patches.SaveContextCollectContainerObjectsPatch.Transpiler));
+            Harmony.Patch(original, transpiler: patch);
+
+            original = AccessTools.Method(typeof(SaveContext), "Save");
+            patch = AccessTools.Method(typeof(Patches.SaveContextSavePatch), nameof(Patches.SaveContextSavePatch.Postfix));
+            Harmony.Patch(original, postfix: patch);
+
+            IsFastCollector = true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error while enabling fast collector patches");
+        }
     }
 
     protected override void OnBeforeInitialModuleScreenSetAsRoot()
@@ -97,12 +124,12 @@ public class SubModule : MBSubModuleBase
             if (!TryStartWipe()) return;
         }
 
-        if (_cleaner is null) return;
-        if (_cleaner.Completed)
+        if (CurrentCleaner is null) return;
+        if (CurrentCleaner.Completed)
         {
-            _cleaner = null;
+            CurrentCleaner = null;
         }
-        else _cleaner.CleanerTick();
+        else CurrentCleaner.CleanerTick();
     }
 
     private bool TryStartCleanUp()
@@ -130,7 +157,7 @@ public class SubModule : MBSubModuleBase
             true, true,
             new TextObject("{=SVCLRButtonYes}Yes").ToString(),
             new TextObject("{=SVCLRButtonNo}No").ToString(),
-            () => _cleaner ??= new Cleaner(CleanerMapView, Addons.Values.ToListQ()).Start(),
+            () => CurrentCleaner ??= new Cleaner(CleanerMapView, Addons.Values.ToListQ()).Start(),
             () => { }));
 
         return true;
@@ -163,7 +190,7 @@ public class SubModule : MBSubModuleBase
             true, true,
             new TextObject("{=SVCLRButtonYes}Yes").ToString(),
             new TextObject("{=SVCLRButtonNo}No").ToString(),
-            () => _cleaner ??= new Cleaner(CleanerMapView, Addons.Values.ToListQ(), addon).Start(),
+            () => CurrentCleaner ??= new Cleaner(CleanerMapView, Addons.Values.ToListQ(), addon).Start(),
             () => { }));
 
         return true;

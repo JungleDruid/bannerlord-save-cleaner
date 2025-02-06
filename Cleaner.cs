@@ -33,14 +33,15 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
     private string _backUpSave;
     private string _finishSave;
     private Dictionary<Type, int> _beforeCleanTypes;
-    private Dictionary<Type, int> _afterCleanTypes;
     private CleanerState _state;
     private DetailState _detailState;
     private int _messageTick;
     private bool _cleaned;
     private readonly Collector _collector = new();
+    private readonly Collector _postSaveCollector = new();
     private readonly Dictionary<object, SaveCleanerAddon> _removableObjects = [];
     private readonly Dictionary<object, object> _blockedWithCompatibilityLevel = new();
+    private bool _isFastCollector;
 
     public bool Completed => _state == CleanerState.Complete && _detailState == DetailState.Ended;
 
@@ -63,6 +64,14 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         LogAndMessage($"{line} Start Cleaning {line}",
             $"{line} {new TextObject("{=SVCLRCleanStarted}Clean Started")} {line}",
             LogLevel.Information);
+
+        if (SubModule.Instance.IsFastCollector)
+        {
+            _isFastCollector = true;
+            LogAndMessage("Fast Collection Mode is ON",
+                new TextObject("{=SVCLRFastCollectionMode}Fast Collection Mode is ON").ToString(),
+                LogLevel.Information);
+        }
 
         return this;
     }
@@ -110,6 +119,36 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             .FirstOrDefault(o => o != null);
     }
 
+    internal void AddRelationToCollector(object child, object parent)
+    {
+        if (_isFastCollector != true) return;
+
+        switch (_state)
+        {
+            case CleanerState.BackingUp:
+                _collector.AddParent(child, parent);
+                break;
+            case CleanerState.Finalizing:
+                _postSaveCollector.AddParent(child, parent);
+                break;
+        }
+    }
+
+    internal void SendChildObjectsToCollector(List<object> objects)
+    {
+        if (_isFastCollector != true) return;
+
+        switch (_state)
+        {
+            case CleanerState.BackingUp:
+                _collector.ChildObjects = objects;
+                break;
+            case CleanerState.Finalizing:
+                _postSaveCollector.ChildObjects = objects;
+                break;
+        }
+    }
+
     private bool IsUnofficial(object obj, object source)
     {
         string ns = obj.GetType().Namespace;
@@ -146,8 +185,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         try
         {
             Campaign.Current.WaitAsyncTasks();
-            _logger.LogDebug("Collecting objects...");
-            var childObjects = _collector.CollectObjects();
+            var childObjects = _isFastCollector ? _collector.ChildObjects : _collector.CollectObjects();
             _logger.LogDebug($"Collected {childObjects.Count} objects.");
 
             _beforeCleanTypes = Collector.GetTypeCollection(childObjects);
@@ -200,7 +238,7 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
                     foreach (var g in _blockedWithCompatibilityLevel.GroupBy(kv => kv.Value.GetType().Assembly, kv => kv))
                     {
                         string dll = g.Key.Modules.First().Name;
-                        foreach (var tg in g.GroupBy(g => g.Key.GetType()))
+                        foreach (var tg in g.GroupBy(kv => kv.Key.GetType()))
                         {
                             string message = $"[{dll}] is blocking {tg.Count()} [{tg.Key.Name}] from removal.";
                             LogAndMessage(message, message, LogLevel.Warning);
@@ -323,11 +361,11 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         if (!StateGate(new TextObject("{=SVCLRStatusCounting}Counting results..."))) return;
 
         Campaign.Current.WaitAsyncTasks();
-        var childObjects = new Collector().CollectObjects();
-        _afterCleanTypes = Collector.GetTypeCollection(childObjects);
+        var childObjects = _isFastCollector ? _postSaveCollector.ChildObjects : new Collector().CollectObjects();
+        var afterCleanTypes = Collector.GetTypeCollection(childObjects);
 
         Dictionary<Type, int> result = new();
-        foreach (var kv in _afterCleanTypes)
+        foreach (var kv in afterCleanTypes)
         {
             if (!_beforeCleanTypes.TryGetValue(kv.Key, out int before)) before = 0;
             if (before != kv.Value)
@@ -345,7 +383,14 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             LogAndMessage(logMessage, logMessage, LogLevel.Information);
         }
 
-        FinishState();
+        if (_isFastCollector)
+        {
+            ChangeState(CleanerState.Complete);
+        }
+        else
+        {
+            FinishState();
+        }
     }
 
     private void FilterOutNonRemovableObjects()
@@ -379,7 +424,15 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
                 new Dictionary<string, object> { ["NUMBER"] = _removableObjects.Count }).ToString(),
             LogLevel.Information);
         _cleaned = true;
-        FinishState();
+
+        if (_isFastCollector)
+        {
+            ChangeState(CleanerState.Finalizing);
+        }
+        else
+        {
+            FinishState();
+        }
     }
 
     private void FinishState()
@@ -421,7 +474,24 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             return;
         }
 
-        FinishState();
+        if (_isFastCollector)
+        {
+            switch (_state)
+            {
+                case CleanerState.BackingUp:
+                    ChangeState(CleanerState.Collecting);
+                    break;
+                case CleanerState.Finalizing:
+                    ChangeState(CleanerState.Counting);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Invalid state {_state}");
+            }
+        }
+        else
+        {
+            FinishState();
+        }
     }
 
     private void OnComplete()
