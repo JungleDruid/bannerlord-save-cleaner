@@ -24,6 +24,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
     private string ActionName => wiping == null ? "cleaning" : $"wiping_{wiping.Name}";
     private string BackupSaveName => $"before_{ActionName}_{PlayerClanAndName}_";
     private string FinishSaveName => $"after_{ActionName}_{PlayerClanAndName}_";
+    private readonly string _tempSaveName = $"cleaner_temp_{PlayerClanAndName}";
     private Stopwatch _stopwatch;
     private string _backUpSave;
     private string _finishSave;
@@ -41,6 +42,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
     private readonly List<Tuple<Regex, SaveCleanerAddon>> _domainHandlers = [];
     private readonly Dictionary<Node, SaveCleanerAddon> _removalHandlers = [];
     private readonly HashSet<object> _failedRemovals = [];
+    private bool _isCreatingTempSave;
 
     public bool Completed => _state == CleanerState.Complete && _detailState == DetailState.Ended;
 
@@ -140,7 +142,8 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         switch (_state)
         {
             case CleanerState.BackingUp:
-                _collector.AddParent(child, parent);
+                if (wiping is null || _isCreatingTempSave)
+                    _collector.AddParent(child, parent);
                 break;
             case CleanerState.Finalizing:
                 _postSaveCollector.AddParent(child, parent);
@@ -155,7 +158,8 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         switch (_state)
         {
             case CleanerState.BackingUp:
-                _collector.ChildObjects = objects;
+                if (wiping is null || _isCreatingTempSave)
+                    _collector.ChildObjects = objects;
                 break;
             case CleanerState.Finalizing:
                 _postSaveCollector.ChildObjects = objects;
@@ -267,9 +271,11 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         return !failed;
     }
 
+    private readonly TextObject _collectingMessage = new("{=SVCLRStatusCollecting}Collecting objects...");
+
     private void Collecting()
     {
-        if (!StateGate(new TextObject("{=SVCLRStatusCollecting}Collecting objects..."))) return;
+        if (!StateGate(_collectingMessage)) return;
 
         var failedAddons = addons.WhereQ(a => !a.Disabled && !a.PreClean(this)).ToListQ();
         if (failedAddons.Count > 0)
@@ -444,20 +450,25 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         }
     }
 
+    private readonly TextObject _backupMessage = new("{=SVCLRStatusBackup}Creating backup save...");
+    private readonly TextObject _tempSaveMessage = new("{=SVCLRStatusBackupTemp}Creating temporary save for data collection...");
+
     private void BackingUp()
     {
         if (Campaign.Current.SaveHandler.IsSaving) return;
-        if (!StateGate(new TextObject("{=SVCLRStatusBackup}Creating backup save..."))) return;
+        if (!StateGate(_isCreatingTempSave ? _tempSaveMessage : _backupMessage)) return;
 
         _backUpSave = GetAvailableSaveName(BackupSaveName);
         SubModule.Instance.SaveEventReceiver.SaveOver += OnSaveOver;
         Campaign.Current.SaveHandler.SaveAs(_backUpSave);
     }
 
+    private readonly TextObject _finalizingMessage = new("{=SVCLRStatusFinalizing}Saving game...");
+
     private void Finalizing()
     {
         if (Campaign.Current.SaveHandler.IsSaving) return;
-        if (!StateGate(new TextObject("{=SVCLRStatusFinalizing}Saving game..."))) return;
+        if (!StateGate(_finalizingMessage)) return;
 
         var failedAddons = addons.WhereQ(a => !a.Disabled && !a.PostClean()).ToListQ();
         if (failedAddons.Count > 0)
@@ -513,9 +524,11 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         }
     }
 
+    private readonly TextObject _countingMessage = new("{=SVCLRStatusCounting}Counting results...");
+
     private void Counting()
     {
-        if (!StateGate(new TextObject("{=SVCLRStatusCounting}Counting results..."))) return;
+        if (!StateGate(_countingMessage)) return;
 
         Campaign.Current.WaitAsyncTasks();
         var childObjects = _isFastCollector ? _postSaveCollector.ChildObjects : new Collector().CollectObjects();
@@ -531,13 +544,16 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
             }
         }
 
-        LogAndMessage("Clean results:",
-            new TextObject("{=SVCLRCleanResults}Clean results:").ToString(),
-            LogLevel.Information);
-        foreach (var kv in result.OrderByQ(kv => -kv.Value))
+        if (result.Count > 0)
         {
-            string logMessage = $"[{kv.Key.Name}]: {kv.Value}";
-            LogAndMessage(logMessage, logMessage, LogLevel.Information);
+            LogAndMessage("Clean results:",
+                new TextObject("{=SVCLRCleanResults}Clean results:").ToString(),
+                LogLevel.Information);
+            foreach (var kv in result.OrderByQ(kv => -kv.Value))
+            {
+                string logMessage = $"[{kv.Key.Name}]: {kv.Value}";
+                LogAndMessage(logMessage, logMessage, LogLevel.Information);
+            }
         }
 
         if (_isFastCollector)
@@ -550,9 +566,11 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         }
     }
 
+    private readonly TextObject _removingMessage = new("{=SVCLRStatusRemoving}Removing objects...");
+
     private void Removing()
     {
-        if (!StateGate(new TextObject("{=SVCLRStatusRemoving}Removing objects..."))) return;
+        if (!StateGate(_removingMessage)) return;
 
         var failures = _removalHandlers.WhereQ(kv => !kv.Value.InvokeDoRemoveChild(kv.Key)).ToListQ();
         if (failures.Count > 0)
@@ -587,7 +605,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
 
     private void OnSaveOver(bool isSuccessful, string saveName)
     {
-        if (saveName != _backUpSave && saveName != _finishSave) return;
+        if (saveName != _backUpSave && saveName != _finishSave && saveName != _tempSaveName) return;
         SubModule.Instance.SaveEventReceiver.SaveOver -= OnSaveOver;
 
         if (!isSuccessful)
@@ -598,7 +616,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
             return;
         }
 
-        if (_state == CleanerState.BackingUp && wiping?.Wipe() == false)
+        if (_state == CleanerState.BackingUp && !_isCreatingTempSave && wiping?.Wipe() == false)
         {
             LogAndMessage("Wipe failed!", new TextObject("{=SVCLRWipeFailed}Wipe failed!").ToString(), LogLevel.Error);
             OnError();
@@ -610,10 +628,24 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
             switch (_state)
             {
                 case CleanerState.BackingUp:
-                    ChangeState(CleanerState.Collecting);
+                    if (wiping is not null && !_isCreatingTempSave)
+                    {
+                        _isCreatingTempSave = true;
+                        ChangeState(CleanerState.BackingUp);
+                    }
+                    else
+                    {
+                        if (_isCreatingTempSave)
+                        {
+                            MBSaveLoad.DeleteSaveGame(_tempSaveName);
+                        }
+
+                        ChangeState(CleanerState.Collecting);
+                    }
+
                     break;
                 case CleanerState.Finalizing:
-                    ChangeState(CleanerState.Counting);
+                    ChangeState(_cleaned ? CleanerState.Counting : CleanerState.Complete);
                     break;
                 default:
                     throw new InvalidOperationException($"Invalid state {_state}");
