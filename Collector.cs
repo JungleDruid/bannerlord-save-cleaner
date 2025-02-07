@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Bannerlord.ButterLib.Logger.Extensions;
 using HarmonyLib;
@@ -353,14 +354,6 @@ internal class Collector
 
     public static Dictionary<Type, int> GetTypeCollection(IEnumerable<object> enumerable)
     {
-        Dictionary<Type, int> dict = new();
-        foreach (object obj in enumerable)
-        {
-            Type type = obj.GetType();
-            if (!dict.TryGetValue(type, out int value)) value = 0;
-            dict[type] = value + 1;
-        }
-
-        return dict;
+        return enumerable.GroupBy(obj => obj.GetType()).ToDictionary(group => group.Key, group => group.Count());
     }
 }

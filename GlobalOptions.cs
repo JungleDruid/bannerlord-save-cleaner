@@ -2,5 +2,5 @@ namespace SaveCleaner;
 
 public static class GlobalOptions
 {
-    public static int CompatibilityLevel { get; internal set; } = 2;
+    public static bool CompatibilityMode { get; internal set; } = true;
 }

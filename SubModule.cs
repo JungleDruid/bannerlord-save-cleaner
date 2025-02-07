@@ -10,6 +10,7 @@ using MCM.Abstractions.FluentBuilder;
 using Microsoft.Extensions.Logging;
 using SandBox.View.Map;
 using SaveCleaner.UI;
+using SaveCleaner.Utils;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -19,7 +20,6 @@ using TaleWorlds.MountAndBlade;
 using TaleWorlds.SaveSystem.Save;
 
 #if DEBUG
-using System.Diagnostics;
 using TaleWorlds.InputSystem;
 #endif
 
@@ -37,7 +37,6 @@ public class SubModule : MBSubModuleBase
     private CleanerMapView CleanerMapView { get; set; }
     [CanBeNull] private FluentPerCampaignSettings _settings;
     private bool _startPressed;
-    internal static Dictionary<Type, SaveCleanerAddon> Addons { get; } = [];
     private SaveCleanerAddon _wipeAddon;
     private bool CanCleanUp => MapScreen.Instance?.IsActive == true && CleanerMapView is not null && !CleanerMapView.IsFinalized;
 
@@ -96,7 +95,7 @@ public class SubModule : MBSubModuleBase
 
         if (superKey && Input.IsKeyPressed(InputKey.B))
         {
-            Debugger.Break();
+            SafeDebugger.Break();
         }
 
         if (superKey && Input.IsKeyPressed(InputKey.C))
@@ -112,7 +111,7 @@ public class SubModule : MBSubModuleBase
             ISettingsBuilder builder = MCMSettings.AddSettings(id);
             _settings = builder.SetOnPropertyChanged(OnPropertyChanged).BuildAsPerCampaign();
             _settings.Register();
-            Addons.Remove(typeof(SubModule));
+            AddonManager.Unregister<SubModule>();
             DefaultAddon.Register();
         }
 #endif
@@ -135,7 +134,7 @@ public class SubModule : MBSubModuleBase
 
     private bool TryStartCleanUp()
     {
-        if (!Addons.Values.AnyQ(a => !a.Disabled))
+        if (!AddonManager.Addons.AnyQ(a => !a.Disabled))
         {
             _startPressed = false;
             InformationManager.ShowInquiry(new InquiryData(
@@ -158,7 +157,7 @@ public class SubModule : MBSubModuleBase
             true, true,
             new TextObject("{=SVCLRButtonYes}Yes").ToString(),
             new TextObject("{=SVCLRButtonNo}No").ToString(),
-            () => CurrentCleaner ??= new Cleaner(CleanerMapView, Addons.Values.ToListQ()).Start(),
+            () => CurrentCleaner ??= new Cleaner(CleanerMapView, AddonManager.Addons).Start(),
             () => { }));
 
         return true;
@@ -191,7 +190,7 @@ public class SubModule : MBSubModuleBase
             true, true,
             new TextObject("{=SVCLRButtonYes}Yes").ToString(),
             new TextObject("{=SVCLRButtonNo}No").ToString(),
-            () => CurrentCleaner ??= new Cleaner(CleanerMapView, Addons.Values.ToListQ(), addon).Start(),
+            () => CurrentCleaner ??= new Cleaner(CleanerMapView, AddonManager.Addons, addon).Start(),
             () => { }));
 
         return true;

@@ -2,28 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Bannerlord.ButterLib.Logger.Extensions;
 using HarmonyLib;
 using Microsoft.Extensions.Logging;
 using SaveCleaner.UI;
+using SaveCleaner.Utils;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.LogEntries;
-using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
-using TaleWorlds.ObjectSystem;
 using TaleWorlds.SaveSystem;
 
 namespace SaveCleaner;
 
-internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, SaveCleanerAddon wiping = null)
+internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> addons, SaveCleanerAddon wiping = null)
 {
-    private static readonly Regex OfficialNamespaceRegex = new(@"^(TaleWorlds|StoryMode|SandBox|System)\b");
-
     private readonly ILogger _logger = LogFactory.Get<Cleaner>();
     private static string PlayerClanAndName => $"{Clan.PlayerClan.Name.ToString().ToLower()}_{Hero.MainHero.Name.ToString().ToLower()}";
     private string ActionName => wiping == null ? "cleaning" : $"wiping_{wiping.Name}";
@@ -40,8 +35,12 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
     private readonly Collector _collector = new();
     private readonly Collector _postSaveCollector = new();
     private readonly Dictionary<object, SaveCleanerAddon> _removableObjects = [];
-    private readonly Dictionary<object, object> _blockedWithCompatibilityLevel = new();
+    private readonly Dictionary<object, object> _blockedWithCompatibilityMode = [];
     private bool _isFastCollector;
+    private readonly List<SaveCleanerAddon> _enabledAddons = addons.WhereQ(a => !a.Disabled).ToListQ();
+    private readonly List<Tuple<Regex, SaveCleanerAddon>> _domainHandlers = [];
+    private readonly Dictionary<Node, SaveCleanerAddon> _removalHandlers = [];
+    private readonly HashSet<object> _failedRemovals = [];
 
     public bool Completed => _state == CleanerState.Complete && _detailState == DetailState.Ended;
 
@@ -54,10 +53,16 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             return this;
         }
 
+        if (_enabledAddons.Count == 0)
+        {
+            _logger.LogError("No addon enabled!");
+            OnError();
+            return this;
+        }
+
         _stopwatch = new Stopwatch();
         _stopwatch.Start();
 
-        ForwardState();
         mapView.SetActive(true);
         mapView.SetText(new TextObject("{=SVCLRCleanStarted}Clean Started"));
         string line = new('=', 10);
@@ -73,6 +78,15 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
                 LogLevel.Information);
         }
 
+        foreach (SaveCleanerAddon addon in _enabledAddons)
+        {
+            foreach (Regex regex in addon.SupportedNamespaceRegexes)
+            {
+                _domainHandlers.Add(new Tuple<Regex, SaveCleanerAddon>(regex, addon));
+            }
+        }
+
+        ForwardState();
         return this;
     }
 
@@ -149,22 +163,108 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         }
     }
 
-    private bool IsUnofficial(object obj, object source)
+    private bool QueryRemovable(object obj, Dictionary<Node, SaveCleanerAddon> newHandlers, Dictionary<object, SaveCleanerAddon> newRemovables, HashSet<object> visited)
     {
-        string ns = obj.GetType().Namespace;
-        bool result = ns is null || !(OfficialNamespaceRegex.IsMatch(ns));
-        if (!result) return false;
+        if (!visited.Add(obj)) return true;
+        if (_removalHandlers.AnyQ(tuple => tuple.Key.Value == obj)) return true;
+        if (_failedRemovals.Contains(obj)) return false;
 
-        SubModule.Instance.Logger.LogDebug($"[Compatibility: {GlobalOptions.CompatibilityLevel}] Removal of [{source.GetType().Name}]{source} is blocked by [{obj.GetType()}]{obj}");
-        _blockedWithCompatibilityLevel[source] = obj;
-        return true;
-    }
+        bool failed = false;
+        if (_collector.ParentMap.TryGetValue(obj, out var set))
+        {
+            foreach (object parent in set)
+            {
+                string ns = GetNamespace(parent);
 
-    internal bool CheckCompatibility(object obj)
-    {
-        if (GlobalOptions.CompatibilityLevel <= 0) return true;
-        object parentFromOtherMods = GetFirstParent(obj, p => IsUnofficial(p, obj), GlobalOptions.CompatibilityLevel, []);
-        return parentFromOtherMods is null;
+                Node node = new(obj) { Parent = new Node(parent) };
+
+                while (ns == "System" || ns.StartsWith("System."))
+                {
+                    if (_collector.ParentMap.TryGetValue(node.Top.Value, out var grandparents))
+                    {
+                        if (grandparents.Count > 1)
+                        {
+                            object issue = node.Top.Value;
+                            _logger.LogWarning($"Multiple grandparents found with [{issue.GetType().Name}]{issue}. Parents: {grandparents.SelectQ(p => $"[{p.GetType().Name}]{p}").Join()}");
+                            failed = true;
+                            break;
+                        }
+
+                        object grandparent = grandparents.First();
+                        node.Top.Parent = new Node(grandparent);
+                        ns = GetNamespace(grandparent);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (failed) break;
+
+                var matches = _domainHandlers.Where(tuple => tuple.Item1.IsMatch(ns)).ToListQ();
+                if (matches.Any())
+                {
+                    foreach (var tuple in from tuple in matches let result = tuple.Item2.InvokeCanRemoveChild(node) where result select tuple)
+                    {
+                        newHandlers.Add(node, tuple.Item2);
+                        break;
+                    }
+                }
+                else if (!GlobalOptions.CompatibilityMode)
+                {
+                    if (addons[0].InvokeCanRemoveChild(node))
+                    {
+                        newHandlers.Add(node, addons[0]);
+                    }
+                    else
+                    {
+                        failed = true;
+                        break;
+                    }
+                }
+                else
+                {
+                    _blockedWithCompatibilityMode.Add(obj, node.Top.Value);
+                    failed = true;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            SafeDebugger.Break();
+            failed = true;
+        }
+
+        if (!failed)
+        {
+            foreach (SaveCleanerAddon addon in _enabledAddons)
+            {
+                foreach (object dependency in addon.GetDependencies(obj))
+                {
+                    if (QueryRemovable(dependency, newHandlers, newRemovables, visited))
+                    {
+                        if (!_removableObjects.ContainsKey(dependency) && !newRemovables.ContainsKey(dependency))
+                            newRemovables.Add(dependency, addon);
+                    }
+                    else
+                    {
+                        failed = true;
+                        break;
+                    }
+                }
+
+                if (failed) break;
+            }
+        }
+
+        if (failed)
+        {
+            _failedRemovals.Add(obj);
+        }
+
+        return !failed;
     }
 
     private void Collecting()
@@ -195,14 +295,49 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
             }
 
             _logger.LogDebug("Collecting references...");
+            Queue<object> removableQueries = [];
             foreach (object obj in childObjects)
             {
                 SaveCleanerAddon addon = RemovableFromAddons(obj);
                 if (addon is null) continue;
-                CollectReferences(obj, addon);
+                _removableObjects.Add(obj, addon);
+                removableQueries.Enqueue(obj);
             }
 
-            FilterOutNonRemovableObjects();
+            Dictionary<Node, SaveCleanerAddon> newHandlers = [];
+            Dictionary<object, SaveCleanerAddon> newRemovables = [];
+            HashSet<object> visited = [];
+
+            while (removableQueries.Count > 0)
+            {
+                object obj = removableQueries.Dequeue();
+                if (QueryRemovable(obj, newHandlers, newRemovables, visited))
+                {
+                    newHandlers.Do(kv => _removalHandlers.Add(kv.Key, kv.Value));
+                    newRemovables.Do(kv => _removableObjects.Add(kv.Key, kv.Value));
+                }
+                else
+                {
+                    RemoveDependenciesFromRemovables(obj);
+                    _removableObjects.Remove(obj);
+                    _failedRemovals.Add(obj);
+                }
+
+                newHandlers.Clear();
+                newRemovables.Clear();
+                visited.Clear();
+            }
+
+            bool failed;
+            do
+            {
+                failed = false;
+                foreach (object obj in _removableObjects.Keys.ToListQ().Where(obj => _enabledAddons.AnyQ(addon => !addon.GetDependencies(obj).AllQ(_removableObjects.ContainsKey))))
+                {
+                    failed = true;
+                    _removableObjects.Remove(obj);
+                }
+            } while (failed);
 
             _logger.LogDebug($"Collected {_removableObjects.Count} removable objects.");
             if (_removableObjects.Any())
@@ -229,19 +364,23 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
                     new TextObject("{=SVCLRTotalCollectedCount}Collected {NUMBER} removable objects in total.",
                         new Dictionary<string, object> { ["NUMBER"] = _removableObjects.Count, }).ToString());
 
-                if (GlobalOptions.CompatibilityLevel > 0)
+                if (GlobalOptions.CompatibilityMode)
                 {
-                    LogAndMessage($"{_blockedWithCompatibilityLevel.Count} of removable objects were blocked with compatibility level {GlobalOptions.CompatibilityLevel}",
-                        new TextObject("{=SVCLRCompatibilityBlockCount}{NUMBER} of removable objects were blocked with compability level {LEVEL}",
-                            new Dictionary<string, object> { ["NUMBER"] = _blockedWithCompatibilityLevel.Count, ["LEVEL"] = GlobalOptions.CompatibilityLevel }).ToString(),
+                    LogAndMessage($"{_blockedWithCompatibilityMode.Count} of removable objects were blocked with compatibility mode.",
+                        new TextObject("{=SVCLRCompatibilityBlockCount}{NUMBER} of removable objects were blocked with compability mode.",
+                            new Dictionary<string, object> { ["NUMBER"] = _blockedWithCompatibilityMode.Count }).ToString(),
                         LogLevel.Information);
-                    foreach (var g in _blockedWithCompatibilityLevel.GroupBy(kv => kv.Value.GetType().Assembly, kv => kv))
+                    foreach (var groupByAssembly in _blockedWithCompatibilityMode.GroupBy(kv => kv.Value.GetType().Assembly, kv => kv))
                     {
-                        string dll = g.Key.Modules.First().Name;
-                        foreach (var tg in g.GroupBy(kv => kv.Key.GetType()))
+                        string dll = groupByAssembly.Key.Modules.First().Name;
+                        foreach (var groupByChildType in groupByAssembly.GroupBy(kv => kv.Key.GetType()))
                         {
-                            string message = $"[{dll}] is blocking {tg.Count()} [{tg.Key.Name}] from removal.";
+                            string message = $"[{dll}] has prevented {groupByChildType.Count()} [{groupByChildType.Key.Name}] from removal with compatibility mode.";
                             LogAndMessage(message, message, LogLevel.Warning);
+                            foreach (var groupByParentType in groupByChildType.GroupBy(kv => kv.Value.GetType()))
+                            {
+                                _logger.LogWarning($"[{groupByParentType.Key.Name}] is holding {groupByParentType.CountQ()} [{groupByChildType.Key.Name}]");
+                            }
                         }
                     }
                 }
@@ -262,6 +401,24 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
                 LogLevel.Error, ex);
             OnError();
         }
+    }
+
+    private void RemoveDependenciesFromRemovables(object obj)
+    {
+        if (!_removableObjects.ContainsKey(obj)) return;
+        _removableObjects.Remove(obj);
+        _enabledAddons.SelectMany(addon => addon.GetDependencies(obj)).Do(RemoveDependenciesFromRemovables);
+    }
+
+    private string GetNamespace(object parent)
+    {
+        Type type = parent.GetType();
+        string ns = type.Namespace;
+        if (!string.IsNullOrEmpty(ns)) return ns;
+
+        ns = type.Assembly.Modules.First().Name;
+        _logger.LogDebug($"[{type.Name}]{parent} doesn't have a namespace, using dll {ns} as fallback.");
+        return ns;
     }
 
     private bool StateGate(TextObject startMessage)
@@ -393,36 +550,24 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         }
     }
 
-    private void FilterOutNonRemovableObjects()
-    {
-        while (_removableObjects.Count > 0)
-        {
-            var failedObjects = _removableObjects.WhereQ(kv => !RemoveReferences(kv.Key, kv.Value, true) || !CheckCompatibility(kv.Key)).ToListQ();
-            if (!failedObjects.AnyQ()) return;
-            failedObjects.Select(kv => kv.Key).Do(FlushFromRemovables);
-        }
-    }
-
-    private void FlushFromRemovables(object obj)
-    {
-        _removableObjects.Remove(obj);
-        if (!_collector.ChildMap.TryGetValue(obj, out var set)) return;
-        set.WhereQ(_removableObjects.ContainsKey).Do(FlushFromRemovables);
-    }
-
     private void Removing()
     {
         if (!StateGate(new TextObject("{=SVCLRStatusRemoving}Removing objects..."))) return;
 
-        if (_removableObjects.WhereQ(kv => !RemoveReferences(kv.Key, kv.Value, false)).AnyQ())
+        var failures = _removalHandlers.WhereQ(kv => !kv.Value.InvokeDoRemoveChild(kv.Key)).ToListQ();
+        if (failures.Count > 0)
         {
-            throw new InvalidOperationException("Removing objects failed, but should never happen.");
+            foreach (var kv in failures)
+            {
+                object obj = kv.Key.Value;
+                object parent = kv.Key.Top.Value;
+                _logger.LogError($"Handler {kv.Value} failed to remove object [{obj.GetType()}]{obj} from [{parent.GetType()}]{parent}");
+            }
+
+            OnError();
+            return;
         }
 
-        LogAndMessage($"Cleaned {_removableObjects.Count} objects.",
-            new TextObject("{=SVCLRCleanedObjectsCount}Cleaned {NUMBER} objects.",
-                new Dictionary<string, object> { ["NUMBER"] = _removableObjects.Count }).ToString(),
-            LogLevel.Information);
         _cleaned = true;
 
         if (_isFastCollector)
@@ -438,20 +583,6 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
     private void FinishState()
     {
         _detailState = DetailState.Ended;
-    }
-
-    private bool SafeToRemove(object obj)
-    {
-        if (_removableObjects.ContainsKey(obj)) return true;
-        if (obj.GetType().IsContainer()) return false;
-        switch (obj)
-        {
-            case LogEntry:
-            case CharacterObject { HeroObject: not null } characterObject when _removableObjects.ContainsKey(characterObject.HeroObject):
-                return true;
-            default:
-                return false;
-        }
     }
 
     private void OnSaveOver(bool isSuccessful, string saveName)
@@ -544,126 +675,9 @@ internal class Cleaner(CleanerMapView mapView, List<SaveCleanerAddon> addons, Sa
         FinishState();
     }
 
-    private void CollectReferences(object obj, SaveCleanerAddon sourceAddon)
-    {
-        if (obj.GetType().IsContainer()) return;
-        if (_removableObjects.ContainsKey(obj)) return;
-        _removableObjects.Add(obj, sourceAddon);
-        _logger.LogTrace($"Collecting references of [{obj.GetType()}]{obj}...");
-
-        if (_collector.ParentMap.TryGetValue(obj, out var set))
-        {
-            foreach (object parent in set.Where(SafeToRemove))
-            {
-                CollectReferences(parent, sourceAddon);
-            }
-        }
-        else
-        {
-            _logger.LogWarning($"Could find parents of [{obj.GetType()}]{obj}");
-        }
-    }
-
-    private bool RemoveReferences(object obj, SaveCleanerAddon source, bool dryRun)
-    {
-        if (!dryRun) _logger.LogTrace($"[{source}] Removing references of [{obj.GetType().Name}]{obj}...");
-        if (!dryRun && obj is MBObjectBase mbObject)
-        {
-            MBObjectManager.Instance.UnregisterObject(mbObject);
-        }
-
-        if (_collector.ParentMap.TryGetValue(obj, out var set))
-        {
-            foreach (object parent in set.Where(parent => !_removableObjects.ContainsKey(parent) && !RemoveFromParent(obj, parent, dryRun)))
-            {
-                _logger.LogWarning($"Failed to remove [{obj.GetType().Name}]{obj} from [{parent.GetType()}]{parent}");
-                return false;
-            }
-        }
-        else
-        {
-            _logger.LogWarning($"Could find parents of [{obj.GetType()}]{obj}");
-            return false;
-        }
-
-        return true;
-    }
-
-    private bool RemoveFromParent(object obj, object parent, bool dryRun)
-    {
-        _logger.LogTrace($"Removing [{obj.GetType()}]{obj} from [{parent.GetType()}]{parent}");
-        bool removed = false;
-        if (parent.GetType().IsContainer(out ContainerType containerType))
-        {
-            return RemoveFromContainer(obj, parent, containerType, dryRun);
-        }
-
-        foreach (var field in parent.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-        {
-            if (field.GetValue(parent) != obj) continue;
-            if (!dryRun) field.SetValue(parent, null);
-            removed = true;
-        }
-
-        return removed;
-    }
-
-    private bool RemoveFromContainer(object obj, object parent, ContainerType containerType, bool dryRun)
-    {
-        bool removed = false;
-        Type parentType = parent.GetType();
-        switch (containerType)
-        {
-            case ContainerType.CustomList:
-            case ContainerType.CustomReadOnlyList:
-            case ContainerType.List:
-                if (!dryRun) parentType.GetMethod("Remove")!.Invoke(parent, [obj]);
-                removed = true;
-                break;
-            case ContainerType.Dictionary:
-                if (parentType.GenericTypeArguments.Length == 2 && parentType.GenericTypeArguments[0] == obj.GetType())
-                {
-                    if (!dryRun) parentType.GetMethod("Remove")!.Invoke(parent, [obj]);
-                    removed = true;
-                }
-
-                break;
-            case ContainerType.Array:
-                if (parent is TroopRosterElement[] troopRosterElements)
-                {
-                    if (_collector.ParentMap.TryGetValue(troopRosterElements, out var set))
-                    {
-                        foreach (object rosterObject in set)
-                        {
-                            if (rosterObject is not TroopRoster roster) continue;
-                            if (!dryRun) roster.RemoveTroop((CharacterObject)obj);
-                            removed = true;
-                        }
-                    }
-                }
-                else if (parent is ItemRosterElement[] itemRosterElements)
-                {
-                    if (_collector.ParentMap.TryGetValue(itemRosterElements, out var set))
-                    {
-                        foreach (object rosterObject in set)
-                        {
-                            if (rosterObject is not ItemRoster roster) continue;
-                            if (!dryRun) roster.RemoveIf(e => e.EquipmentElement.Item == obj ? e.Amount : 0);
-                            removed = true;
-                        }
-                    }
-                }
-
-                break;
-        }
-
-        return removed;
-    }
-
     private SaveCleanerAddon RemovableFromAddons(object obj)
     {
-        var enabledAddons = addons.WhereQ(a => !a.Disabled).ToListQ();
-        return enabledAddons.Any(addon => addon.IsEssential(obj)) ? null : enabledAddons.FirstOrDefaultQ(addon => addon.IsRemovable(obj));
+        return _enabledAddons.Any(addon => addon.IsEssential(obj)) ? null : _enabledAddons.FirstOrDefaultQ(addon => addon.IsRemovable(obj));
     }
 
     private void ChangeState(CleanerState state)

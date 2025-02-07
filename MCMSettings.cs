@@ -46,27 +46,29 @@ internal static class MCMSettings
                     "{=SVCLRStartButton}Start",
                     propBuilder => propBuilder
                         .SetHintText("{=SVCLRStartCleaningHint}Will start cleaning after closing the menu."))
-                .AddInteger("compatibility_level",
-                    "{=SVCLRCompatibilityLevel}Compatibility Level",
-                    0, 3, new ProxyRef<int>(() => GlobalOptions.CompatibilityLevel, value => GlobalOptions.CompatibilityLevel = value),
+                .AddBool("compatibility_mode",
+                    "{=SVCLRCompatibilityMode}Compatibility Mode",
+                    new ProxyRef<bool>(() => GlobalOptions.CompatibilityMode, value => GlobalOptions.CompatibilityMode = value),
                     propBuilder => propBuilder.SetHintText(
-                        "{=SVCLRCompatibilityLevelHint}Higher level will likely reduce the amount of cleanable objects, but safer with mods without addon support."));
+                        "{=SVCLRCompatibilityModeHint}Prevents items from being removed from mods without addons."));
     }
 
     private static ISettingsBuilder BuildModGroups(this ISettingsBuilder builder, ModPresetBuilder modPresetBuilder)
     {
-        foreach (SaveCleanerAddon addon in SubModule.Addons.Values)
+        foreach (SaveCleanerAddon addon in AddonManager.Addons)
         {
             builder.CreateGroup($"{new TextObject("{=SVCLRGroupAddons}Addons")}/{addon.Name}",
                 groupBuilder =>
                 {
-                    groupBuilder
-                        .SetGroupOrder(addon.Id == SubModule.Harmony.Id ? 0 : 1)
-                        .AddToggle(
+                    groupBuilder.SetGroupOrder(addon.Id == SubModule.Harmony.Id ? 0 : 1);
+                    if (addon.Owner != typeof(SubModule))
+                    {
+                        groupBuilder.AddToggle(
                             AddonToggleId(addon.Id),
                             addon.Name,
                             new ProxyRef<bool>(() => !addon.Disabled, value => addon.Disabled = !value),
                             propBuilder => propBuilder.SetHintText(addon.Id));
+                    }
 
                     modPresetBuilder.OnBuildDefaults += presetBuilder => presetBuilder.SetPropertyValue($"enable_{addon.Id}", true);
 

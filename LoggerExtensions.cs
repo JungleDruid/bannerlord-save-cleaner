@@ -1,11 +1,12 @@
 using System;
+using Bannerlord.ButterLib.Logger.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace SaveCleaner;
 
-public static class LoggerExtensions
+internal static class LoggerExtensions
 {
-    public static void Log(this ILogger logger, LogLevel logLevel, string message, Exception exception)
+    internal static void Log(this ILogger logger, LogLevel logLevel, string message, Exception exception)
     {
         switch (logLevel)
         {
@@ -26,6 +27,35 @@ public static class LoggerExtensions
                 break;
             case LogLevel.Critical:
                 logger.LogCritical(exception, message);
+                break;
+            case LogLevel.None:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(logLevel), logLevel, null);
+        }
+    }
+    
+    internal static void LogAndDisplay(this ILogger logger, LogLevel logLevel, string message, Exception exception)
+    {
+        switch (logLevel)
+        {
+            case LogLevel.Trace:
+                logger.LogTraceAndDisplay(exception, message);
+                break;
+            case LogLevel.Debug:
+                logger.LogDebugAndDisplay(exception, message);
+                break;
+            case LogLevel.Information:
+                logger.LogInformationAndDisplay(exception, message);
+                break;
+            case LogLevel.Warning:
+                logger.LogWarningAndDisplay(exception, message);
+                break;
+            case LogLevel.Error:
+                logger.LogErrorAndDisplay(exception, message);
+                break;
+            case LogLevel.Critical:
+                logger.LogCriticalAndDisplay(exception, message);
                 break;
             case LogLevel.None:
                 break;

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using TaleWorlds.MountAndBlade;
 
@@ -26,12 +27,16 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
 
     public delegate bool PredicateDelegate(SaveCleanerAddon addon);
 
+    public delegate bool NodePredicateDelegate(SaveCleanerAddon addon, Node node);
+
     public string Id { get; } = id;
     public string Name { get; } = name;
     private readonly ILogger _logger = LogFactory.Get<SaveCleanerAddon>();
     private readonly ImmutableDictionary<string, ISetting> _settings = settings.ToImmutableDictionary(s => s.Id, s => s);
     private Cleaner _cleaner;
     internal IEnumerable<ISetting> Settings => _settings.Values;
+    internal List<Regex> SupportedNamespaceRegexes { get; } = [];
+    internal Type Owner { get; set; }
 
     public override string ToString() => $"{Name} ({Id})";
 
@@ -60,6 +65,23 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
     /// </summary>
     public event PredicateDelegate OnPostClean;
 
+    /// <summary>
+    /// Invoked when the parent is an object of the addon's supported namespace. <seealso cref="AddSupportedNamespace"/>.
+    /// Return true will allow the child to be removed from the parent in <see cref="DoRemoveChild"/>.
+    /// </summary>
+    public event NodePredicateDelegate CanRemoveChild;
+
+    /// <summary>
+    /// Invoked when actually removing the child from the parent, which the addon is responsible to handle.
+    /// </summary>
+    public event NodePredicateDelegate DoRemoveChild;
+
+    /// <summary>
+    /// Return objects that must be removed together.
+    /// If returned objects was not removable, this object will also be prevented from removal.
+    /// </summary>
+    public event Func<object, IEnumerable<object>> Dependencies;
+
     internal bool CanWipe => OnWipe != null;
 
     public bool Disabled { get; internal set; }
@@ -78,7 +100,7 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
     /// <typeparam name="T">The SubModule type</typeparam>
     public void Register<T>() where T : MBSubModuleBase
     {
-        SubModule.Addons.Add(typeof(T), this);
+        AddonManager.Register<T>(this);
     }
 
     /// <summary>
@@ -94,7 +116,6 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
         if (_cleaner is null) throw new NullReferenceException("No cleaner available.");
         yield return _cleaner.GetAllParents(obj, depth, []);
     }
-
 
     /// <summary>
     /// Get the parents of <paramref name="obj"/> recursively, but only returns the right type.
@@ -162,7 +183,34 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
     /// <param name="exception"></param>
     public void Log(string message, LogLevel logLevel, Exception exception = null)
     {
-        _logger.Log(logLevel, message, exception);
+        string name = Name;
+        int loc = name.IndexOf('}');
+        if (loc >= 0) name = name.Substring(loc + 1);
+        _logger.Log(logLevel, $"[{name}]: {message}", exception);
+    }
+
+    /// <summary>
+    /// Print a message to SaveCleaner.log and display the message in the game
+    /// </summary>
+    /// <param name="message"></param>
+    /// <param name="logLevel"></param>
+    /// <param name="exception"></param>
+    public void LogAndDisplay(string message, LogLevel logLevel, Exception exception = null)
+    {
+        string name = Name;
+        int loc = name.IndexOf('}');
+        if (loc >= 0) name = name.Substring(loc + 1);
+        _logger.LogAndDisplay(logLevel, $"[{name}]: {message}", exception);
+    }
+
+    /// <summary>
+    /// Add supports for namespaces of parent objects where this addon will be able to handle the removal of their children.
+    /// See <see cref="CanRemoveChild"/> and <see cref="DoRemoveChild"/>
+    /// </summary>
+    /// <param name="namespaceRegex"></param>
+    public void AddSupportedNamespace(Regex namespaceRegex)
+    {
+        SupportedNamespaceRegexes.Add(namespaceRegex);
     }
 
     internal bool IsRemovable(object o)
@@ -194,6 +242,25 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
         bool result = OnPostClean?.GetInvocationList().Cast<PredicateDelegate>().All(p => p.Invoke(this)) ?? true;
         _cleaner = null;
         return result;
+    }
+
+    internal bool InvokeCanRemoveChild(Node childNode)
+    {
+        return CanRemoveChild?.GetInvocationList().Cast<NodePredicateDelegate>().Any(p => p.Invoke(this, childNode)) ?? false;
+    }
+
+    internal bool InvokeDoRemoveChild(Node childNode)
+    {
+        return DoRemoveChild?.GetInvocationList().Cast<NodePredicateDelegate>().Any(p => p.Invoke(this, childNode)) ?? false;
+    }
+
+    internal IEnumerable<object> GetDependencies(object obj)
+    {
+        if (Dependencies is null) yield break;
+        foreach (object o in Dependencies(obj))
+        {
+            yield return o;
+        }
     }
 
     /// <summary>
