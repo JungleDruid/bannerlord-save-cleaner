@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Bannerlord.ButterLib.Logger.Extensions;
@@ -458,7 +459,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         if (Campaign.Current.SaveHandler.IsSaving) return;
         if (!StateGate(_isCreatingTempSave ? _tempSaveMessage : _backupMessage)) return;
 
-        _backUpSave = GetAvailableSaveName(BackupSaveName);
+        _backUpSave = CampaignOptions.IsIronmanMode ? Campaign.Current.SaveHandler.IronmanModSaveName : GetAvailableSaveName(BackupSaveName);
         SubModule.Instance.SaveEventReceiver.SaveOver += OnSaveOver;
         Campaign.Current.SaveHandler.SaveAs(_backUpSave);
     }
@@ -479,9 +480,42 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         }
 
         Campaign.Current.SetTimeControlModeLock(false);
-        _finishSave = GetAvailableSaveName(FinishSaveName);
+        _finishSave = CampaignOptions.IsIronmanMode ? Campaign.Current.SaveHandler.IronmanModSaveName : GetAvailableSaveName(FinishSaveName);
         SubModule.Instance.SaveEventReceiver.SaveOver += OnSaveOver;
         Campaign.Current.SaveHandler.SaveAs(_finishSave);
+    }
+
+    private bool BackupIronmanSave()
+    {
+        try
+        {
+            if (MBSaveLoad.GetSaveFileWithName(_backUpSave) is null)
+            {
+                throw new FileNotFoundException();
+            }
+
+            string savePath = new PlatformFilePath(new PlatformDirectoryPath(PlatformFileType.User, "Game Saves\\"), _backUpSave + ".sav").FileFullPath;
+
+            string backUpPrefix = savePath + ".cleaner_backup_";
+            int index = 0;
+            while (File.Exists(backUpPrefix + index))
+                index++;
+            _backUpSave = backUpPrefix + index;
+
+            File.Copy(savePath, _backUpSave, true);
+
+            LogAndMessage("Ironman save backup successful: " + savePath,
+                new TextObject("{=SVCLRIronmanBackupDone}Ironman save backup successful: {PATH}",
+                    new Dictionary<string, object> { ["PATH"] = _backUpSave }).ToString());
+            return true;
+        }
+        catch (Exception ex)
+        {
+            LogAndMessage("Failed to back up Ironman save.",
+                new TextObject("{=SVCLRIronmanBackupError}Failed to back up Ironman save.").ToString(), LogLevel.Error, ex);
+            OnError();
+            return false;
+        }
     }
 
     private static string GetAvailableSaveName(string prefix)
@@ -616,6 +650,11 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
             return;
         }
 
+        if (CampaignOptions.IsIronmanMode && !_isCreatingTempSave && _state == CleanerState.BackingUp)
+        {
+            if (!BackupIronmanSave()) return;
+        }
+
         if (_state == CleanerState.BackingUp && !_isCreatingTempSave && wiping?.Wipe() == false)
         {
             LogAndMessage("Wipe failed!", new TextObject("{=SVCLRWipeFailed}Wipe failed!").ToString(), LogLevel.Error);
@@ -661,7 +700,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
     {
         if (_detailState == DetailState.Ended) return;
         Campaign.Current.SetTimeControlModeLock(false);
-        if (!_cleaned && _backUpSave is not null && wiping is null)
+        if (!_cleaned && _backUpSave is not null && wiping is null && !CampaignOptions.IsIronmanMode)
         {
             SaveGameFileInfo save = MBSaveLoad.GetSaveFileWithName(_backUpSave);
             if (save is not null)
