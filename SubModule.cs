@@ -10,7 +10,6 @@ using MCM.Abstractions.FluentBuilder;
 using Microsoft.Extensions.Logging;
 using SandBox.View.Map;
 using SaveCleaner.UI;
-using SaveCleaner.Utils;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -20,6 +19,7 @@ using TaleWorlds.MountAndBlade;
 using TaleWorlds.SaveSystem.Save;
 
 #if DEBUG
+using SaveCleaner.Utils;
 using TaleWorlds.InputSystem;
 #endif
 
