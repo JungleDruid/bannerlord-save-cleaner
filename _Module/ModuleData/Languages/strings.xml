@@ -51,6 +51,12 @@
         <string id="SVCLRSuccessLoadReminder" text="Please load the save before continue playing: "/>
         <string id="SVCLRFailureLoadReminder" text="Please load the backup save before continue playing: "/>
         <string id="SVCLRCompatibilityMode" text="Compatibility Mode"/>
-        <string id="SVCLRCompatibilityModeHint" text="This will reduce the likelihood of having issues with other mods after cleaning"/>
+        <string id="SVCLRCompatibilityModeHint" text="Prevents items from being removed from mods without addons."/>
+        <string id="SVCLRFastCollectionMode" text="Fast Collection Mode is ON"/>
+        <string id="SVCLRCompatibilityBlockCount" text="{NUMBER} of removable objects were blocked with compability mode."/>
+        <string id="SVCLRCompatibilityTypeCount" text="[{DLL_FILE}] has prevented {NUMBER} [{TYPE_NAME}] from removal with compatibility mode."/>
+        <string id="SVCLRStatusBackupTemp" text="Creating temporary save for data collection..."/>
+        <string id="SVCLRIronmanBackupDone" text="Ironman save backup successful: {PATH}"/>
+        <string id="SVCLRIronmanBackupError" text="Failed to back up Ironman save."/>
     </strings>
 </base>

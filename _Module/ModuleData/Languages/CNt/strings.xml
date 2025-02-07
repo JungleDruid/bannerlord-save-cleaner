@@ -50,5 +50,13 @@
         <string id="SVCLRCleanTerminated" text="清理遭中斷。詳情見記錄檔。"/>
         <string id="SVCLRSuccessLoadReminder" text="請先讀取存檔再繼續遊玩： "/>
         <string id="SVCLRFailureLoadReminder" text="請先讀取備份存檔再繼續遊玩： "/>
+        <string id="SVCLRCompatibilityMode" text="相容模式"/>
+        <string id="SVCLRCompatibilityModeHint" text="防止物品從無插件支援的模組中刪除。"/>
+        <string id="SVCLRFastCollectionMode" text="快速蒐集模式已開啓"/>
+        <string id="SVCLRCompatibilityBlockCount" text="{NUMBER} 個可移除資料被相容模式阻止。"/>
+        <string id="SVCLRCompatibilityTypeCount" text="[{DLL_FILE}] 阻止了 {NUMBER} 個 [{TYPE_NAME}] 被移除（相容模式）。"/>
+        <string id="SVCLRStatusBackupTemp" text="正在儲存用於蒐集資訊的暫存檔案……"/>
+        <string id="SVCLRIronmanBackupDone" text="鐵人模式存檔備份成功: {PATH}"/>
+        <string id="SVCLRIronmanBackupError" text="鐵人模式存檔備份失敗。"/>
     </strings>
 </base>

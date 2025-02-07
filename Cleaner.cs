@@ -382,11 +382,15 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
                         string dll = groupByAssembly.Key.Modules.First().Name;
                         foreach (var groupByChildType in groupByAssembly.GroupBy(kv => kv.Key.GetType()))
                         {
-                            string message = $"[{dll}] has prevented {groupByChildType.Count()} [{groupByChildType.Key.Name}] from removal with compatibility mode.";
-                            LogAndMessage(message, message, LogLevel.Warning);
+                            string childTypeName = groupByChildType.Key.Name;
+                            int count = groupByChildType.Count();
+                            LogAndMessage($"[{dll}] has prevented {count} [{childTypeName}] from removal with compatibility mode.",
+                                new TextObject("{=SVCLRCompatibilityTypeCount}[{DLL_FILE}] has prevented {NUMBER} [{TYPE_NAME}] from removal with compatibility mode.",
+                                    new Dictionary<string, object> { ["DLL_FILE"] = dll, ["NUMBER"] = count, ["TYPE_NAME"] = childTypeName }).ToString(),
+                                LogLevel.Warning);
                             foreach (var groupByParentType in groupByChildType.GroupBy(kv => kv.Value.GetType()))
                             {
-                                _logger.LogWarning($"[{groupByParentType.Key.Name}] is holding {groupByParentType.CountQ()} [{groupByChildType.Key.Name}]");
+                                _logger.LogWarning($"[{groupByParentType.Key.Name}] is holding {groupByParentType.CountQ()} [{childTypeName}]");
                             }
                         }
                     }

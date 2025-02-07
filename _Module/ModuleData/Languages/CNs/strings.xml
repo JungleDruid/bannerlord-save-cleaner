@@ -44,11 +44,19 @@
         <string id="SVCLRCleanResults" text="清理结果："/>
         <string id="SVCLRStatusRemoving" text="正在移除资料……"/>
         <string id="SVCLRCleanedObjectsCount" text="清理了 {NUMBER} 个资料。"/>
-        <string id="SVCLRWipeFailed" text="插件清除失败！"/>
+        <string id="SVCLRWipeFailed" text="模组清除失败！"/>
         <string id="SVCLRRemovingBackup" text="正在移除备份存档……"/>
         <string id="SVCLRCleanComplete" text="清理完成。总共耗时 {NUMBER} 秒。"/>
         <string id="SVCLRCleanTerminated" text="清理遭中断。详情见记录档。"/>
         <string id="SVCLRSuccessLoadReminder" text="请先读取存档再继续游玩： "/>
         <string id="SVCLRFailureLoadReminder" text="请先读取备份存档再继续游玩： "/>
+        <string id="SVCLRCompatibilityMode" text="相容模式"/>
+        <string id="SVCLRCompatibilityModeHint" text="防止物品从无插件支援的模组中删除。"/>
+        <string id="SVCLRFastCollectionMode" text="快速搜集模式已开启"/>
+        <string id="SVCLRCompatibilityBlockCount" text="{NUMBER} 个可移除资料被相容模式阻止。"/>
+        <string id="SVCLRCompatibilityTypeCount" text="[{DLL_FILE}] 阻止了 {NUMBER} 个 [{TYPE_NAME}] 被移除（相容模式）。"/>
+        <string id="SVCLRStatusBackupTemp" text="正在储存用于搜集资讯的暂存档案……"/>
+        <string id="SVCLRIronmanBackupDone" text="直面人生模式存档备份成功: {PATH}"/>
+        <string id="SVCLRIronmanBackupError" text="直面人生模式存档备份失败。"/>
     </strings>
 </base>
