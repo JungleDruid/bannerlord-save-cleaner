@@ -8,7 +8,8 @@ internal class AddonManager
 {
     // ReSharper disable once InconsistentNaming
     private static readonly List<SaveCleanerAddon> _addons = [];
-    private static readonly ILogger Logger = LogFactory.Get<AddonManager>();
+    private static ILogger s_logger;
+    private static ILogger Logger => s_logger ??= LogFactory.Get<AddonManager>();
 
     internal static IReadOnlyList<SaveCleanerAddon> Addons => _addons;
 

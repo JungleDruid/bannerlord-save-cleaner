@@ -31,7 +31,8 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
 
     public string Id { get; } = id;
     public string Name { get; } = name;
-    private readonly ILogger _logger = LogFactory.Get<SaveCleanerAddon>();
+    private ILogger _logger;
+    private ILogger Logger => _logger ??= LogFactory.Get<SaveCleanerAddon>();
     private readonly ImmutableDictionary<string, ISetting> _settings = settings.ToImmutableDictionary(s => s.Id, s => s);
     private Cleaner _cleaner;
     internal IEnumerable<ISetting> Settings => _settings.Values;
@@ -186,7 +187,7 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
         string name = Name;
         int loc = name.IndexOf('}');
         if (loc >= 0) name = name.Substring(loc + 1);
-        _logger.Log(logLevel, $"[{name}]: {message}", exception);
+        Logger.Log(logLevel, $"[{name}]: {message}", exception);
     }
 
     /// <summary>
@@ -200,7 +201,7 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
         string name = Name;
         int loc = name.IndexOf('}');
         if (loc >= 0) name = name.Substring(loc + 1);
-        _logger.LogAndDisplay(logLevel, $"[{name}]: {message}", exception);
+        Logger.LogAndDisplay(logLevel, $"[{name}]: {message}", exception);
     }
 
     /// <summary>

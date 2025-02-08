@@ -12,6 +12,6 @@ internal static class LogFactory
     {
         IServiceProvider serviceProvider = SubModule.Instance?.GetServiceProvider() ?? SubModule.Instance?.GetTempServiceProvider();
 
-        return serviceProvider.GetRequiredService<ILogger<T>>() ?? NullLogger<T>.Instance;
+        return serviceProvider?.GetRequiredService<ILogger<T>>() ?? NullLogger<T>.Instance;
     }
 }
