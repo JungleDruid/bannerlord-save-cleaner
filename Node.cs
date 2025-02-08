@@ -52,7 +52,7 @@ public class Node(object value)
             {
                 Type parentType = parentValue.GetType();
                 result += parentType
-                    .GetRuntimeFields()
+                    .GetAllFields()
                     .WhereQ(f => f.FieldType == type)
                     .SelectQ(f => (f.GetValue(parentValue) == currentValue ? $"({f.Name})" : f.Name) + " ")
                     .Join(null, "& ");
@@ -60,21 +60,6 @@ public class Node(object value)
 
             current = current._child;
         }
-
-        return result;
-    }
-
-    private string GetStringOfFields(object parent, object child, Type parentType = null)
-    {
-        parentType ??= parent.GetType();
-        Type childType = child.GetType();
-        string result = parentType
-            .GetRuntimeFields()
-            .WhereQ(f => f.FieldType == childType)
-            .SelectQ(f => (f.GetValue(parent) == child ? $"({f.Name})" : f.Name) + " ")
-            .Join(null, "& ");
-
-        if (parentType.BaseType != null) result += GetStringOfFields(parent, child, parentType.BaseType);
 
         return result;
     }

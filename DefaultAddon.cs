@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using HarmonyLib;
 using Microsoft.Extensions.Logging;
 using SaveCleaner.Utils;
 using TaleWorlds.CampaignSystem;
@@ -25,14 +26,27 @@ internal static class DefaultAddon
             new SaveCleanerAddon.BoolSetting(Settings.RemoveDisappearedHeroes, "{=SVCLRRemoveDisappearedHeroes}Remove Disappeared Heroes",
                 "{=SVCLRRemoveDisappearedHeroesHint}These disappeared heroes are usually spawned by mods.", 1, true),
             new SaveCleanerAddon.BoolSetting(Settings.RemoveAbandonedCraftedItems, "{=SVCLRRemoveAbandonedCraftedItems}Remove Abandoned Crafted Items",
-                "{=SVCLRRemoveAbandonedCraftedItemsHint}The game by default keeps all the crafted items even after they are disappeared.", 2, true));
+                "{=SVCLRRemoveAbandonedCraftedItemsHint}The game by default keeps all the crafted items even after they are disappeared.", 2, true),
+            new SaveCleanerAddon.BoolSetting(Settings.RemoveCorruptedLogs, "{=SVCLRRemoveCorruptedLogs}Remove Corrupted Logs",
+                "{=SVCLRRemoveCorruptedLogs}Remove log entries that have important data missing, which may cause issues.", 2, true));
         addon.OnPreClean += OnPreClean;
         addon.OnPostClean += OnPostClean;
         addon.CanRemoveChild += CanRemoveChild;
         addon.DoRemoveChild += DoRemoveChild;
         addon.Dependencies += HeroDependencies;
+        addon.Essential += Essential;
         addon.AddSupportedNamespace(new Regex(@"^(TaleWorlds|StoryMode|SandBox|System)\b"));
         addon.Register<SubModule>();
+    }
+
+    private static bool Essential(SaveCleanerAddon addon, object obj)
+    {
+        return obj switch
+        {
+            PlayerCharacterChangedLogEntry => true,
+            PlayerRetiredLogEntry => true,
+            _ => false
+        };
     }
 
     private static IEnumerable<object> HeroDependencies(SaveCleanerAddon addon, object obj)
@@ -53,6 +67,12 @@ internal static class DefaultAddon
                 break;
             case CharacterObject { HeroObject: not null } characterObject:
                 yield return characterObject.HeroObject;
+
+                foreach (object logEntry in addon.GetParents(characterObject).WhereQ(o => o is LogEntry))
+                {
+                    yield return logEntry;
+                }
+
                 break;
         }
     }
@@ -130,7 +150,7 @@ internal static class DefaultAddon
                         }
                         else
                         {
-                            // SafeDebugger.Break();
+                            SafeDebugger.Break();
                         }
 
                         removed = true;
@@ -159,12 +179,13 @@ internal static class DefaultAddon
         if (!FillVault(addon)) return false;
 
         addon.ClearRemovablePredicates();
-        addon.ClearEssentialPredicates();
 
         if (addon.GetValue<bool>(Settings.RemoveDisappearedHeroes))
             addon.Removable += RemoveDisappearedHeroes;
         if (addon.GetValue<bool>(Settings.RemoveAbandonedCraftedItems) && Vault.ContainsKey("CraftingCampaignBehavior._craftedItemDictionary"))
             addon.Removable += RemoveAbandonedCraftedItems;
+        if (addon.GetValue<bool>(Settings.RemoveCorruptedLogs))
+            addon.Removable += RemoveCorruptedLogs;
 
         return true;
     }
@@ -172,7 +193,7 @@ internal static class DefaultAddon
     private static bool FillVault(SaveCleanerAddon addon)
     {
         Vault.Clear();
-        if (addon.GetValue<bool>(Settings.RemoveDisappearedHeroes))
+        if (addon.GetValue<bool>(Settings.RemoveAbandonedCraftedItems))
         {
             object item = typeof(CraftingCampaignBehavior)
                 .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
@@ -223,5 +244,38 @@ internal static class DefaultAddon
         }
 
         return false;
+    }
+
+    private static readonly AccessTools.FieldRef<OverruleInfluenceLogEntry, Hero> OverruleInfluenceLogEntryLiege =
+        AccessTools.FieldRefAccess<OverruleInfluenceLogEntry, Hero>("_liege");
+
+    private static bool RemoveCorruptedLogs(SaveCleanerAddon addon, object obj)
+    {
+        return obj switch
+        {
+            BesiegeSettlementLogEntry { BesiegerHero: null } => true,
+            ChangeRomanticStateLogEntry e when e.Hero1 is null || e.Hero2 is null => true,
+            CharacterBecameFugitiveLogEntry { Hero: null } => true,
+            CharacterBornLogEntry { BornCharacter: null } => true,
+            CharacterInsultedLogEntry e when e.Insultee is null || e.Insulter is null => true,
+            CharacterKilledLogEntry { Victim: null } => true,
+            CharacterMarriedLogEntry e when e.MarriedTo is null || e.MarriedHero is null => true,
+            ChildbirthLogEntry { Mother: null } => true,
+            ClanLeaderChangedLogEntry e when e.OldLeader is null || e.NewLeader is null => true,
+            DefeatCharacterLogEntry e when e.WinnerHero is null || e.LoserHero is null => true,
+            EndCaptivityLogEntry { Prisoner: null } => true,
+            GatherArmyLogEntry { ArmyLeader: null } => true,
+            IssueQuestLogEntry { IssueGiver: null } => true,
+            IssueQuestStartLogEntry { IssueGiver: null } => true,
+            OverruleInfluenceLogEntry e when OverruleInfluenceLogEntryLiege(e) is null => true,
+            PlayerAttackAlleyLogEntry { CommonAreaOwner: null } => true,
+            PlayerMeetLordLogEntry { Hero: null } => true,
+            PregnancyLogEntry { Mother: null } => true,
+            SettlementClaimedLogEntry { Claimant: null } => true,
+            TakePrisonerLogEntry { Prisoner: null } => true,
+            TournamentWonLogEntry { Winner: null } => true,
+            VillageStateChangedLogEntry { RaidLeader: null } => true,
+            _ => false
+        };
     }
 }
