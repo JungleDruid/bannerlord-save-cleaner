@@ -29,6 +29,8 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
 
     public delegate bool NodePredicateDelegate(SaveCleanerAddon addon, Node node);
 
+    public delegate IEnumerable<object> ObjectEnumerableDelegate(SaveCleanerAddon addon, object obj);
+
     public string Id { get; } = id;
     public string Name { get; } = name;
     private ILogger _logger;
@@ -81,7 +83,7 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
     /// Return objects that must be removed together.
     /// If returned objects was not removable, this object will also be prevented from removal.
     /// </summary>
-    public event Func<object, IEnumerable<object>> Dependencies;
+    public event ObjectEnumerableDelegate Dependencies;
 
     internal bool CanWipe => OnWipe != null;
 
@@ -258,7 +260,7 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
     internal IEnumerable<object> GetDependencies(object obj)
     {
         if (Dependencies is null) yield break;
-        foreach (object o in Dependencies(obj))
+        foreach (object o in Dependencies(this, obj))
         {
             yield return o;
         }

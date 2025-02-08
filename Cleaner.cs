@@ -615,9 +615,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         {
             foreach (var kv in failures)
             {
-                object obj = kv.Key.Value;
-                object parent = kv.Key.Top.Value;
-                _logger.LogError($"Handler {kv.Value} failed to remove object [{obj.GetType()}]{obj} from [{parent.GetType()}]{parent}");
+                _logger.LogError($"Handler {kv.Value} failed to remove object {kv.Key.Value}, {kv.Key.GetLinkString()}");
             }
 
             OnError();

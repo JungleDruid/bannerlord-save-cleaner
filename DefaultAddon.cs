@@ -35,15 +35,22 @@ internal static class DefaultAddon
         addon.Register<SubModule>();
     }
 
-    private static IEnumerable<object> HeroDependencies(object obj)
+    private static IEnumerable<object> HeroDependencies(SaveCleanerAddon addon, object obj)
     {
         switch (obj)
         {
-            case Hero { CharacterObject: not null } hero:
-            {
-                yield return hero.CharacterObject;
+            case Hero hero:
+                if (hero.CharacterObject != null)
+                {
+                    yield return hero.CharacterObject;
+                }
+
+                foreach (object logEntry in addon.GetParents(hero).WhereQ(o => o is LogEntry))
+                {
+                    yield return logEntry;
+                }
+
                 break;
-            }
             case CharacterObject { HeroObject: not null } characterObject:
                 yield return characterObject.HeroObject;
                 break;
@@ -191,10 +198,15 @@ internal static class DefaultAddon
 
     private static bool RemoveDisappearedHeroes(SaveCleanerAddon addon, object o)
     {
-        if (o is not Hero hero) return false;
-        if (hero.CharacterObject is null) return true;
-        if (hero is { IsActive: false, IsAlive: false, PartyBelongedTo: null, CurrentSettlement: null } &&
-            !Hero.AllAliveHeroes.Contains(hero) && !Hero.DeadOrDisabledHeroes.Contains(hero)) return true;
+        switch (o)
+        {
+            case Hero hero:
+                if (hero.CharacterObject is null) return true;
+                if (hero is { IsActive: false, IsAlive: false, PartyBelongedTo: null, CurrentSettlement: null } &&
+                    !Hero.AllAliveHeroes.Contains(hero) && !Hero.DeadOrDisabledHeroes.Contains(hero)) return true;
+                break;
+        }
+
         return false;
     }
 
