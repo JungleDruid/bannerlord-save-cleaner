@@ -2,7 +2,7 @@
 <Module>
     <Name value="SaveCleaner"/>
     <Id value="SaveCleaner"/>
-    <Version value="v1.1.0.2"/>
+    <Version value="v1.1.1.0"/>
     <Official value="false"/>
     <DefaultModule value="false"/>
     <SingleplayerModule value="true"/>
@@ -15,7 +15,21 @@
         <DependedModule Id="StoryMode"/>
         <DependedModule Id="Bannerlord.ButterLib"/>
         <DependedModule Id="Bannerlord.MBOptionScreen"/>
+        <DependedModule Id="Bannerlord.Harmony"/>
     </DependedModules>
+    <!-- Community Dependency Metadata -->
+    <DependedModuleMetadatas>
+        <DependedModuleMetadata id="Bannerlord.Harmony" order="LoadBeforeThis"/>
+        <DependedModuleMetadata id="Bannerlord.ButterLib" order="LoadBeforeThis"/>
+        <DependedModuleMetadata id="Bannerlord.UIExtenderEx" order="LoadBeforeThis"/>
+        <DependedModuleMetadata id="Bannerlord.MBOptionScreen" order="LoadBeforeThis"/>
+        <DependedModuleMetadata id="Native" order="LoadBeforeThis"/>
+        <DependedModuleMetadata id="SandBoxCore" order="LoadBeforeThis"/>
+        <DependedModuleMetadata id="Sandbox" order="LoadBeforeThis"/>
+        <DependedModuleMetadata id="StoryMode" order="LoadBeforeThis"/>
+        <DependedModuleMetadata id="CustomBattle" order="LoadBeforeThis"/>
+    </DependedModuleMetadatas>
+    <!-- Community Dependency Metadata -->
     <SubModules>
         <SubModule>
             <Name value="SaveCleaner"/>
