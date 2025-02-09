@@ -23,18 +23,16 @@ internal class Collector
     private Queue<object> _objectsToIterate;
     private object _rootObject;
     private readonly DefinitionContext _definitionContext = new();
-    private readonly Dictionary<object, int> _idsOfChildObjects = new();
-    private readonly List<object> _childContainers = [];
-    private readonly Dictionary<object, int> _idsOfChildContainers = new();
-    private readonly List<object> _temporaryCollectedObjects = [];
-    private readonly Dictionary<object, HashSet<object>> _parentMap = new();
-    private readonly Dictionary<object, HashSet<object>> _childMap = new();
+    private readonly List<object> _childContainers = new(131072);
+    private readonly List<object> _temporaryCollectedObjects = new(4096);
+    private readonly Dictionary<object, HashSet<object>> _parentMap = new(131072);
 
     private bool _collected;
 
-    internal List<object> ChildObjects { get; set; } = [];
+    internal List<object> ChildObjects { get; set; } = new(131072);
+    internal Dictionary<object, int> IdsOfChildObjects { get; set; } = new(131072);
+    internal Dictionary<object, int> IdsOfChildContainers { get; set; } = new(131072);
     public IReadOnlyDictionary<object, HashSet<object>> ParentMap => _parentMap;
-    public IReadOnlyDictionary<object, HashSet<object>> ChildMap => _childMap;
 
     private static readonly MethodInfo GetClassDefinitionMethod = AccessTools.Method(typeof(DefinitionContext), "GetClassDefinition");
     private static readonly MethodInfo GetStructDefinitionMethod = AccessTools.Method(typeof(DefinitionContext), "GetStructDefinition");
@@ -61,13 +59,14 @@ internal class Collector
             parents.Add(parent);
         else
             _parentMap.Add(child, [parent]);
-
-        if (_childMap.TryGetValue(parent, out var children))
-            children.Add(child);
-        else
-            _childMap.Add(parent, [child]);
     }
 
+    internal int GetId(object obj)
+    {
+        if (IdsOfChildObjects.TryGetValue(obj, out int id)) return id;
+        if (IdsOfChildContainers.TryGetValue(obj, out id)) return id;
+        throw new ArgumentOutOfRangeException($"Could not find an id: {obj}");
+    }
 
     public IReadOnlyList<object> CollectObjects()
     {
@@ -97,11 +96,11 @@ internal class Collector
 
     private void CollectObjects(object parent)
     {
-        if (_idsOfChildObjects.ContainsKey(parent))
+        if (IdsOfChildObjects.ContainsKey(parent))
             return;
         int count = ChildObjects.Count;
         ChildObjects.Add(parent);
-        _idsOfChildObjects.Add(parent, count);
+        IdsOfChildObjects.Add(parent, count);
         Type type = parent.GetType();
 
         TypeDefinition classDefinition = GetClassDefinition(type);
@@ -165,11 +164,11 @@ internal class Collector
 
     private void CollectContainerObjects(ContainerType containerType, object parent)
     {
-        if (_idsOfChildContainers.ContainsKey(parent))
+        if (IdsOfChildContainers.ContainsKey(parent))
             return;
         int count = _childContainers.Count;
         _childContainers.Add(parent);
-        _idsOfChildContainers.Add(parent, count);
+        IdsOfChildContainers.Add(parent, count);
         Type type = parent.GetType();
         ContainerDefinition containerDefinition = GetContainerDefinition(type);
         if (containerDefinition == null)

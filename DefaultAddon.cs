@@ -45,6 +45,7 @@ internal static class DefaultAddon
         {
             PlayerCharacterChangedLogEntry => true,
             PlayerRetiredLogEntry => true,
+            Hero hero => hero.Clan == Clan.PlayerClan,
             _ => false
         };
     }
@@ -89,23 +90,25 @@ internal static class DefaultAddon
                 return true;
         }
 
-        return RemoveFromParent(addon, child, parent, true);
+        return RemoveFromParent(addon, node, true);
     }
 
     private static bool DoRemoveChild(SaveCleanerAddon addon, Node node)
     {
-        return RemoveFromParent(addon, node.Value, node.Parent.Value, false);
+        return RemoveFromParent(addon, node, false);
     }
 
-    private static bool RemoveFromParent(SaveCleanerAddon addon, object child, object parent, bool dryRun)
+    private static bool RemoveFromParent(SaveCleanerAddon addon, Node node, bool dryRun)
     {
         bool removed = false;
+        object child = node.Value;
+        object parent = node.Parent.Value;
         if (parent.GetType().IsContainer(out ContainerType containerType))
         {
-            return RemoveFromContainer(addon, child, parent, containerType, dryRun);
+            return RemoveFromContainer(addon, node, containerType, dryRun);
         }
 
-        foreach (var field in parent.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        foreach (FieldInfo field in parent.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
         {
             if (field.GetValue(parent) != child) continue;
             if (!dryRun) field.SetValue(parent, null);
@@ -115,9 +118,11 @@ internal static class DefaultAddon
         return removed;
     }
 
-    private static bool RemoveFromContainer(SaveCleanerAddon addon, object child, object parent, ContainerType containerType, bool dryRun)
+    private static bool RemoveFromContainer(SaveCleanerAddon addon, Node node, ContainerType containerType, bool dryRun)
     {
         bool removed = false;
+        object child = node.Value;
+        object parent = node.Parent.Value;
         Type parentType = parent.GetType();
         switch (containerType)
         {
@@ -170,7 +175,7 @@ internal static class DefaultAddon
         }
 
         if (!removed)
-            addon.Log($"Failed to remove [{child.GetType().Name}] from [{parentType.Name}]", LogLevel.Debug);
+            addon.Log($"Failed to remove [{child.GetType().Name}]{child} from [{parentType.Name}]{parent}. Link: {node.GetLinkString()}", LogLevel.Debug);
         return removed;
     }
 
@@ -223,8 +228,10 @@ internal static class DefaultAddon
         {
             case Hero hero:
                 if (hero.CharacterObject is null) return true;
-                if (hero is { IsActive: false, IsAlive: false, PartyBelongedTo: null, CurrentSettlement: null } &&
-                    !Hero.AllAliveHeroes.Contains(hero) && !Hero.DeadOrDisabledHeroes.Contains(hero)) return true;
+                if (hero is { PartyBelongedTo: null, CurrentSettlement: null } &&
+                    (hero.IsDead || hero.IsDisabled) &&
+                    !Hero.AllAliveHeroes.Contains(hero) &&
+                    !Hero.DeadOrDisabledHeroes.Contains(hero)) return true;
                 break;
         }
 

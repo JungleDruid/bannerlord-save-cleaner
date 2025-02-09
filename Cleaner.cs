@@ -25,7 +25,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
     private string ActionName => wiping == null ? "cleaning" : $"wiping_{wiping.Name}";
     private string BackupSaveName => $"before_{ActionName}_{PlayerClanAndName}_";
     private string FinishSaveName => $"after_{ActionName}_{PlayerClanAndName}_";
-    private readonly string _tempSaveName = $"cleaner_temp_{PlayerClanAndName}";
+    private static string TempSaveName => CampaignOptions.IsIronmanMode ? Campaign.Current.SaveHandler.IronmanModSaveName : $"cleaner_temp_{PlayerClanAndName}";
     private Stopwatch _stopwatch;
     private string _backUpSave;
     private string _finishSave;
@@ -142,9 +142,8 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
 
         switch (_state)
         {
-            case CleanerState.BackingUp:
-                if (wiping is null || _isCreatingTempSave)
-                    _collector.AddParent(child, parent);
+            case CleanerState.BackingUp when wiping is null || _isCreatingTempSave:
+                _collector.AddParent(child, parent);
                 break;
             case CleanerState.Finalizing:
                 _postSaveCollector.AddParent(child, parent);
@@ -152,18 +151,21 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         }
     }
 
-    internal void SendChildObjectsToCollector(List<object> objects)
+    internal void SendChildObjectsToCollector(List<object> childObjects, Dictionary<object, int> idsOfChildObjects, Dictionary<object, int> idsOfChildContainers)
     {
         if (_isFastCollector != true) return;
 
         switch (_state)
         {
-            case CleanerState.BackingUp:
-                if (wiping is null || _isCreatingTempSave)
-                    _collector.ChildObjects = objects;
+            case CleanerState.BackingUp when wiping is null || _isCreatingTempSave:
+                _collector.ChildObjects = childObjects;
+                _collector.IdsOfChildObjects = idsOfChildObjects;
+                _collector.IdsOfChildContainers = idsOfChildContainers;
                 break;
             case CleanerState.Finalizing:
-                _postSaveCollector.ChildObjects = objects;
+                _postSaveCollector.ChildObjects = childObjects;
+                _postSaveCollector.IdsOfChildObjects = idsOfChildObjects;
+                _postSaveCollector.IdsOfChildContainers = idsOfChildContainers;
                 break;
         }
     }
@@ -177,13 +179,14 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         bool failed = false;
         if (_collector.ParentMap.TryGetValue(obj, out var set))
         {
-            foreach (object parent in set)
+            int objId = _collector.GetId(obj);
+            foreach (object parent in set.WhereQ(p => _collector.GetId(p) < objId))
             {
                 string ns = GetNamespace(parent);
 
                 Node node = new(obj) { Parent = new Node(parent) };
 
-                while (ns == "System" || ns.StartsWith("System."))
+                while (ns == "System" || ns.StartsWith("System.") || node.Top.Value.GetType().IsArray)
                 {
                     if (_collector.ParentMap.TryGetValue(node.Top.Value, out var grandparents))
                     {
@@ -201,6 +204,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
                     }
                     else
                     {
+                        _logger.LogWarning($"Top parent reached by {node.Bottom}. Link: {node.GetLinkString()}");
                         break;
                     }
                 }
@@ -463,9 +467,16 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         if (Campaign.Current.SaveHandler.IsSaving) return;
         if (!StateGate(_isCreatingTempSave ? _tempSaveMessage : _backupMessage)) return;
 
-        _backUpSave = CampaignOptions.IsIronmanMode ? Campaign.Current.SaveHandler.IronmanModSaveName : GetAvailableSaveName(BackupSaveName);
         SubModule.Instance.SaveEventReceiver.SaveOver += OnSaveOver;
-        Campaign.Current.SaveHandler.SaveAs(_backUpSave);
+        if (_isCreatingTempSave)
+        {
+            Campaign.Current.SaveHandler.SaveAs(TempSaveName);
+        }
+        else
+        {
+            _backUpSave = CampaignOptions.IsIronmanMode ? Campaign.Current.SaveHandler.IronmanModSaveName : GetAvailableSaveName(BackupSaveName);
+            Campaign.Current.SaveHandler.SaveAs(_backUpSave);
+        }
     }
 
     private readonly TextObject _finalizingMessage = new("{=SVCLRStatusFinalizing}Saving game...");
@@ -641,7 +652,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
 
     private void OnSaveOver(bool isSuccessful, string saveName)
     {
-        if (saveName != _backUpSave && saveName != _finishSave && saveName != _tempSaveName) return;
+        if (saveName != _backUpSave && saveName != _finishSave && saveName != TempSaveName) return;
         SubModule.Instance.SaveEventReceiver.SaveOver -= OnSaveOver;
 
         if (!isSuccessful)
@@ -676,9 +687,9 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
                     }
                     else
                     {
-                        if (_isCreatingTempSave)
+                        if (_isCreatingTempSave && !CampaignOptions.IsIronmanMode)
                         {
-                            MBSaveLoad.DeleteSaveGame(_tempSaveName);
+                            MBSaveLoad.DeleteSaveGame(TempSaveName);
                         }
 
                         ChangeState(CleanerState.Collecting);

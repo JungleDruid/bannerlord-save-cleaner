@@ -82,9 +82,9 @@ public class Patches
     // [HarmonyPatch(typeof(SaveContext), nameof(SaveContext.Save))]
     public static class SaveContextSavePatch
     {
-        public static void Postfix(List<object> ____childObjects)
+        public static void Postfix(List<object> ____childObjects, Dictionary<object, int> ____idsOfChildObjects, Dictionary<object, int> ____idsOfChildContainers)
         {
-            SubModule.Instance?.CurrentCleaner?.SendChildObjectsToCollector(____childObjects);
+            SubModule.Instance?.CurrentCleaner?.SendChildObjectsToCollector(____childObjects, ____idsOfChildObjects, ____idsOfChildContainers);
         }
     }
 
