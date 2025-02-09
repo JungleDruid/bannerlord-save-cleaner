@@ -1,0 +1,259 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0" version="26.0.11">
+  <diagram name="Page-1" id="19d8dcba-68ad-dc05-1034-9cf7b2a963f6">
+    <mxGraphModel dx="1434" dy="746" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-38" value="" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="260.25" y="790" width="290" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="218ae93e1282097f-43" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=none;endArrow=block;endFill=1;strokeColor=#4D4D4D;strokeWidth=2;fontFamily=Verdana;fontSize=12;fontStyle=1;" parent="1" source="6257edae8c83ed4a-1" target="ejEUV3-k4BWPq1ioV8oS-7" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="161.75" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="218ae93e1282097f-44" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=none;endArrow=block;endFill=1;strokeColor=#4D4D4D;strokeWidth=2;fontFamily=Verdana;fontSize=12;fontStyle=1" parent="1" source="6257edae8c83ed4a-1" target="218ae93e1282097f-12" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="838.75" y="330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-105" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="6257edae8c83ed4a-1" target="ejEUV3-k4BWPq1ioV8oS-102" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6257edae8c83ed4a-1" value="Campaign Object Manager" style="whiteSpace=wrap;html=1;rounded=1;shadow=0;comic=0;strokeWidth=2;fontFamily=Verdana;align=center;fontSize=12;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="213.75" y="343" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-5" value="" style="group;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=top;horizontal=1;fontStyle=0" parent="1" vertex="1" connectable="0">
+          <mxGeometry x="360" y="440" width="150" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="218ae93e1282097f-12" value="Dead Or Disabled Heroes" style="whiteSpace=wrap;html=1;rounded=1;shadow=0;comic=0;strokeWidth=2;fontFamily=Verdana;align=center;fontSize=10;verticalAlign=top;" parent="ejEUV3-k4BWPq1ioV8oS-5" vertex="1">
+          <mxGeometry width="150" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="218ae93e1282097f-13" value="Dead Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="ejEUV3-k4BWPq1ioV8oS-5" vertex="1">
+          <mxGeometry x="18" y="40" width="24" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="218ae93e1282097f-16" value="Dead Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="ejEUV3-k4BWPq1ioV8oS-5" vertex="1">
+          <mxGeometry x="63" y="40" width="24" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="218ae93e1282097f-17" value="Dead Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="ejEUV3-k4BWPq1ioV8oS-5" vertex="1">
+          <mxGeometry x="108" y="40" width="24" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-6" value="" style="group" parent="1" vertex="1" connectable="0">
+          <mxGeometry x="131.25" y="440" width="150" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-7" value="Alive Heroes" style="whiteSpace=wrap;html=1;rounded=1;shadow=0;comic=0;strokeWidth=2;fontFamily=Verdana;align=center;fontSize=10;verticalAlign=top;" parent="ejEUV3-k4BWPq1ioV8oS-6" vertex="1">
+          <mxGeometry width="150" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-8" value="Alive Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="ejEUV3-k4BWPq1ioV8oS-6" vertex="1">
+          <mxGeometry x="18" y="41.66888888888889" width="24" height="26.666666666666664" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-9" value="Alive Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="ejEUV3-k4BWPq1ioV8oS-6" vertex="1">
+          <mxGeometry x="63" y="41.66888888888889" width="24" height="26.666666666666664" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-10" value="Alive Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="ejEUV3-k4BWPq1ioV8oS-6" vertex="1">
+          <mxGeometry x="108" y="41.66888888888889" width="24" height="26.666666666666664" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-13" value="Disposed Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="668" y="380" width="24" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-14" value="Disposed Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="618" y="380" width="24" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-18" value="Disposed Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="718" y="380" width="24" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-23" target="ejEUV3-k4BWPq1ioV8oS-24" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-23" value="&lt;div&gt;Character Object&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="319.25" y="834.13" width="75" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-24" value="&lt;div&gt;Combat Equipment&lt;/div&gt;&lt;div&gt;Civil Equipment&lt;/div&gt;&lt;div&gt;...&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="300.25" y="894.13" width="113" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-25" target="ejEUV3-k4BWPq1ioV8oS-38" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-25" value="Hero" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="361.75" y="722" width="87" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-29" value="Won&#39;t be saved by default" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+          <mxGeometry x="607.25" y="350" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-31" value="&lt;p data-pm-slice=&quot;1 1 [&amp;quot;list&amp;quot;,{&amp;quot;spread&amp;quot;:false,&amp;quot;start&amp;quot;:281,&amp;quot;end&amp;quot;:763},&amp;quot;regular_list_item&amp;quot;,{&amp;quot;start&amp;quot;:418,&amp;quot;end&amp;quot;:763}]&quot;&gt;&lt;span&gt;These are typically &quot;wanderers&quot; who could have been hired as companions.&lt;/span&gt;&lt;/p&gt;&lt;p data-pm-slice=&quot;1 1 [&amp;quot;list&amp;quot;,{&amp;quot;spread&amp;quot;:false,&amp;quot;start&amp;quot;:281,&amp;quot;end&amp;quot;:763},&amp;quot;regular_list_item&amp;quot;,{&amp;quot;start&amp;quot;:418,&amp;quot;end&amp;quot;:763}]&quot;&gt;&lt;span&gt;The game regularly introduces new wanderers and disposes of older ones, unless the player has met them, in which case, they would be put into the Dead or Disabled Heroes collection.&lt;/span&gt;&lt;/p&gt;&lt;p data-pm-slice=&quot;1 1 [&amp;quot;list&amp;quot;,{&amp;quot;spread&amp;quot;:false,&amp;quot;start&amp;quot;:281,&amp;quot;end&amp;quot;:763},&amp;quot;regular_list_item&amp;quot;,{&amp;quot;start&amp;quot;:418,&amp;quot;end&amp;quot;:763}]&quot;&gt;&lt;span&gt;Some mods also add heroes and dispose of them when they are no longer needed.&lt;/span&gt;&lt;/p&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;align=left;verticalAlign=top;" parent="1" vertex="1">
+          <mxGeometry x="600" y="450" width="198" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-32" value="The game only keeps track of these two collections for heroes." style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="193.75" y="590" width="235" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-33" value="Data that a hero would have" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="320.25" y="685" width="170" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-42" value="&lt;div style=&quot;font-size: 11px;&quot;&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Customization details&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 11px;&quot;&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Full Name&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 11px;&quot;&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;First Name&lt;/font&gt;&lt;/div&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Traits&lt;br&gt;&lt;/font&gt;&lt;div style=&quot;font-size: 11px;&quot;&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Skills&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 11px;&quot;&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Perks&lt;/font&gt;&lt;/div&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Level&lt;br&gt;Age&lt;br&gt;&lt;/font&gt;&lt;div style=&quot;font-size: 11px;&quot;&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;...&lt;/font&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+          <mxGeometry x="418.25" y="817.13" width="130" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-44" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;How The Save System Works&lt;/h1&gt;&lt;p data-pm-slice=&quot;1 1 []&quot;&gt;&lt;span&gt;The save system tracks objects starting from the &quot;Game&quot; object, following links to the &lt;/span&gt;&lt;span&gt;&lt;strong&gt;Object Manager&lt;/strong&gt;&lt;/span&gt;&lt;span&gt; and all connected objects.&lt;/span&gt;&lt;/p&gt;&lt;p data-pm-slice=&quot;1 1 []&quot;&gt;&lt;span&gt;&lt;strong&gt;Unlinked objects&lt;/strong&gt;&lt;/span&gt;&lt;span&gt;, such as disposed heroes, are not saved because the system cannot trace the connection from the &quot;Game&quot; object to them.&lt;/span&gt;&lt;/p&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="178" y="29" width="554" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-45" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=none;endArrow=block;endFill=1;strokeColor=#4D4D4D;strokeWidth=2;fontFamily=Verdana;fontSize=12;fontStyle=1;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-47" target="ejEUV3-k4BWPq1ioV8oS-54" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="111.25" y="1546.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-46" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=none;endArrow=block;endFill=1;strokeColor=#4D4D4D;strokeWidth=2;fontFamily=Verdana;fontSize=12;fontStyle=1" parent="1" source="ejEUV3-k4BWPq1ioV8oS-47" target="ejEUV3-k4BWPq1ioV8oS-49" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="788.25" y="1446.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-47" value="Campaign Object Manager" style="whiteSpace=wrap;html=1;rounded=1;shadow=0;comic=0;strokeWidth=2;fontFamily=Verdana;align=center;fontSize=12;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="161.25" y="1456.5" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-48" value="" style="group;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=top;horizontal=1;fontStyle=0" parent="1" vertex="1" connectable="0">
+          <mxGeometry x="281.25" y="1546.5" width="150" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-49" value="Dead Or Disabled Heroes" style="whiteSpace=wrap;html=1;rounded=1;shadow=0;comic=0;strokeWidth=2;fontFamily=Verdana;align=center;fontSize=10;verticalAlign=top;" parent="ejEUV3-k4BWPq1ioV8oS-48" vertex="1">
+          <mxGeometry width="150" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-50" value="Dead Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="ejEUV3-k4BWPq1ioV8oS-48" vertex="1">
+          <mxGeometry x="18" y="40" width="24" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-51" value="Dead Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="ejEUV3-k4BWPq1ioV8oS-48" vertex="1">
+          <mxGeometry x="63" y="40" width="24" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-52" value="Disabled Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="ejEUV3-k4BWPq1ioV8oS-48" vertex="1">
+          <mxGeometry x="108" y="40" width="24" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-53" value="" style="group" parent="1" vertex="1" connectable="0">
+          <mxGeometry x="101.25" y="1546.5" width="150" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-54" value="Alive Heroes" style="whiteSpace=wrap;html=1;rounded=1;shadow=0;comic=0;strokeWidth=2;fontFamily=Verdana;align=center;fontSize=10;verticalAlign=top;" parent="ejEUV3-k4BWPq1ioV8oS-53" vertex="1">
+          <mxGeometry width="150" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-55" value="Alive Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="ejEUV3-k4BWPq1ioV8oS-53" vertex="1">
+          <mxGeometry x="18" y="41.66888888888889" width="24" height="26.666666666666664" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-56" value="Alive Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="ejEUV3-k4BWPq1ioV8oS-53" vertex="1">
+          <mxGeometry x="63" y="41.66888888888889" width="24" height="26.666666666666664" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-57" value="Alive Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="ejEUV3-k4BWPq1ioV8oS-53" vertex="1">
+          <mxGeometry x="108" y="41.66888888888889" width="24" height="26.666666666666664" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-84" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;dashed=1;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-58" target="ejEUV3-k4BWPq1ioV8oS-88" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="569.25" y="1694" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-58" value="Disposed Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="557.25" y="1586.5" width="24" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-87" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;dashed=1;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-59" target="ejEUV3-k4BWPq1ioV8oS-88" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="569.25" y="1694" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-59" value="Disposed Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="507.25" y="1586.5" width="24" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-86" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;dashed=1;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-60" target="ejEUV3-k4BWPq1ioV8oS-88" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="571.25" y="1694" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-60" value="Disposed Hero" style="shape=actor;whiteSpace=wrap;html=1;rounded=0;shadow=0;comic=0;strokeWidth=1;fillColor=#CCCCCC;fontFamily=Verdana;align=center;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="607.25" y="1586.5" width="24" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-72" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-62" target="ejEUV3-k4BWPq1ioV8oS-58" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-73" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-62" target="ejEUV3-k4BWPq1ioV8oS-60" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-62" value="Mod Example" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="521.25" y="1456" width="120" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-64" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.513;entryY=0.227;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-62" target="ejEUV3-k4BWPq1ioV8oS-55" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-66" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.544;entryY=0.125;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-62" target="ejEUV3-k4BWPq1ioV8oS-56" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-67" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.494;entryY=0.286;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-62" target="ejEUV3-k4BWPq1ioV8oS-57" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-68" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.573;entryY=0.23;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-62" target="ejEUV3-k4BWPq1ioV8oS-50" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-69" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.464;entryY=0.151;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-62" target="ejEUV3-k4BWPq1ioV8oS-51" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-70" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.514;entryY=0.246;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-62" target="ejEUV3-k4BWPq1ioV8oS-52" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-71" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.498;entryY=0.151;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-62" target="ejEUV3-k4BWPq1ioV8oS-59" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-75" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-74" target="ejEUV3-k4BWPq1ioV8oS-47" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-76" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-74" target="ejEUV3-k4BWPq1ioV8oS-62" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-74" value="&lt;b&gt;&lt;font style=&quot;font-size: 20px;&quot;&gt;Game&lt;/font&gt;&lt;/b&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" parent="1" vertex="1">
+          <mxGeometry x="352.75" y="1344" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-79" value="&lt;h4 style=&quot;margin-top: 12px;&quot; data-pm-slice=&quot;1 1 []&quot;&gt;&lt;span&gt;&lt;font style=&quot;font-size: 20px;&quot;&gt;Why Save Bloat Happens&lt;/font&gt;&lt;/span&gt;&lt;/h4&gt;&lt;p style=&quot;line-height: 140%;&quot;&gt;&lt;span&gt;Save bloat occurs when mods create persistent links to game objects. For example:&lt;/span&gt;&lt;/p&gt;&lt;ul style=&quot;line-height: 140%;&quot; data-spread=&quot;false&quot;&gt;&lt;li&gt;&lt;p style=&quot;line-height: 140%;&quot;&gt;&lt;span&gt;Mods often track heroes when they are spawned to manage complex relationships or features. However, they may fail to untrack these heroes after they are disposed of. As a result, these disposed objects remain linked to the &quot;Game&quot; object through the mod, causing them to be saved along with all their associated data.&lt;/span&gt;&lt;/p&gt;&lt;/li&gt;&lt;li&gt;&lt;p style=&quot;line-height: 140%;&quot;&gt;&lt;span&gt;Some mods generate new heroes and dispose of them when they are outdated. While the game may unregister these heroes and remove certain data from them, it never cleans up links created by mods. If another mod tries to access removed data from these disposed heroes through lingering references, it can cause errors like &lt;/span&gt;&lt;span&gt;&lt;strong&gt;NullReferenceExceptions&lt;/strong&gt;&lt;/span&gt;&lt;span&gt;, potentially crashing the game.&lt;/span&gt;&lt;/p&gt;&lt;/li&gt;&lt;/ul&gt;&lt;p data-pm-slice=&quot;1 1 []&quot;&gt;&lt;span&gt;Disposed objects can remain linked through mods or other references, preventing the game from fully removing them during the save process. The &lt;/span&gt;&lt;span&gt;&lt;strong&gt;Save Cleaner&lt;/strong&gt;&lt;/span&gt;&lt;span&gt; helps by identifying these disposed objects and cutting off their links from their sources. While it can assist with this issue, mod authors may also find this document helpful to ensure their mods properly clear references to disposed objects to prevent save bloat, improve performance, and reduce the risk of errors related to invalid references.&lt;/span&gt;&lt;/p&gt;&lt;p style=&quot;line-height: 140%;&quot;&gt;&lt;/p&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="55.25" y="1034" width="700" height="290" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-99" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;dashed=1;endArrow=none;endFill=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-88" target="ejEUV3-k4BWPq1ioV8oS-97" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-88" value="&lt;div&gt;Heroes&#39; Data that are supposed to be disposed together&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" parent="1" vertex="1">
+          <mxGeometry x="496.25" y="1674" width="144" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-91" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-90" target="6257edae8c83ed4a-1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-90" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;&lt;b&gt;Game&lt;/b&gt;&lt;/font&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" parent="1" vertex="1">
+          <mxGeometry x="253.75" y="260" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-93" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;dashed=1;dashPattern=1 1;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-7" target="ejEUV3-k4BWPq1ioV8oS-32" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-94" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=1 1;" parent="1" source="218ae93e1282097f-12" target="ejEUV3-k4BWPq1ioV8oS-32" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-97" value="Other data linked to these data, such as TextObjects, would also have been disposed." style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" parent="1" vertex="1">
+          <mxGeometry x="496.25" y="1771" width="144" height="109" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-107" value="" style="group" parent="1" vertex="1" connectable="0">
+          <mxGeometry x="20.25" y="363" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-102" value="" style="verticalLabelPosition=middle;verticalAlign=middle;html=1;shape=mxgraph.basic.layered_rect;dx=10;outlineConnect=0;whiteSpace=wrap;labelPosition=center;align=center;spacing=0;" parent="ejEUV3-k4BWPq1ioV8oS-107" vertex="1">
+          <mxGeometry width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-106" value="Other Collecitons" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="ejEUV3-k4BWPq1ioV8oS-107" vertex="1">
+          <mxGeometry y="10" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-108" value="Example: The Heroes" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=16;" parent="1" vertex="1">
+          <mxGeometry x="310" y="204" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-109" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=-0.042;entryY=0.581;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;dashPattern=1 4;" parent="1" source="218ae93e1282097f-12" target="ejEUV3-k4BWPq1ioV8oS-14" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-110" value="&lt;div&gt;Dispose&lt;/div&gt;&lt;div&gt;with conditions&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="ejEUV3-k4BWPq1ioV8oS-109" vertex="1" connectable="0">
+          <mxGeometry x="-0.1228" y="1" relative="1" as="geometry">
+            <mxPoint x="-4" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-111" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" parent="1" source="ejEUV3-k4BWPq1ioV8oS-7" target="218ae93e1282097f-12" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ejEUV3-k4BWPq1ioV8oS-112" value="&lt;div&gt;When killed&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="ejEUV3-k4BWPq1ioV8oS-111" vertex="1" connectable="0">
+          <mxGeometry x="0.3702" y="-1" relative="1" as="geometry">
+            <mxPoint x="-15" y="-14" as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
