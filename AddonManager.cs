@@ -15,7 +15,7 @@ internal class AddonManager
 
     internal static void Register<T>(SaveCleanerAddon addon)
     {
-        var existed = _addons.FirstOrDefaultQ(a => a.Owner == typeof(T));
+        SaveCleanerAddon existed = _addons.FirstOrDefaultQ(a => a.Owner == typeof(T));
         if (existed is not null)
         {
             Logger.LogWarning($"Multiple register of addon by {typeof(T).Name} detected. Removing the existed addon.");
@@ -31,6 +31,8 @@ internal class AddonManager
         {
             _addons.Add(addon);
         }
+
+        Logger.LogInformation($"Addon ({typeof(T).Name}) registered. {typeof(T).Assembly.FullName}");
     }
 
     internal static void Unregister<T>()
