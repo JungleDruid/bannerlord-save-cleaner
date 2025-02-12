@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+    <tags>
+        <tag language="English"/>
+    </tags>
+    <strings>
+<string id="SVCLRSaveCleaner" text="Save Cleaner"/>
+<string id="SVCLRGroupMain" text=" Основное"/> <!-- Сохраняем пробел перед переводом, чтобы пункт меню был наверху -->
+<string id="SVCLRCleanerMenu" text="Очистка"/>
+<string id="SVCLRStartCleaning" text="Начать очистку"/>
+<string id="SVCLRStartButton" text="Начать"/>
+<string id="SVCLRStartCleaningHint" text="Очистка начнется после закрытия меню."/>
+<string id="SVCLRGroupAddons" text="Дополнения"/>
+<string id="SVCLRAddonWipe" text="Удалить данные из {ADDON_NAME}"/>
+<string id="SVCLRAddonWipeHint" text="Удаление данных из {ADDON_NAME} начнется после закрытия меню."/>
+<string id="SVCLRRemoveDisappearedHeroes" text="Удалить исчезнувших героев"/>
+<string id="SVCLRRemoveDisappearedHeroesHint" text="Эти исчезнувшие герои обычно создаются модами."/>
+<string id="SVCLRRemoveAbandonedCraftedItems" text="Удалить скованные на заказ предметы"/>
+<string id="SVCLRRemoveAbandonedCraftedItemsHint" text="Игра по умолчанию сохраняет все скованные на заказ предметы даже после выполения задания."/>
+<string id="SVCLRButtonOK" text="ОК"/>
+<string id="SVCLRButtonCancel" text="Отмена"/>
+<string id="SVCLRButtonYes" text="Да"/>
+<string id="SVCLRButtonNo" text="Нет"/>
+<string id="SVCLRDialogCleanTitle" text="Начать очистку"/>
+<string id="SVCLRDialogCleanContent" text="Вернитесь на карту мира, чтобы начать процесс очистки."/>
+<string id="SVCLRDialogWipeTitle" text="Начать удаление данных {ADDON_NAME}"/>
+<string id="SVCLRDialogWipeContent" text="Вернитесь на карту мира, чтобы начать удаление данных мода."/>
+<string id="SVCLRError" text="Ошибка"/>
+<string id="SVCLRErrorNoAddonAvailable" text="Доступных дополнений нет."/>
+<string id="SVCLRErrorWipeTargetDisabled" text="Цель для удаления отключена."/>
+<string id="SVCLRDialogConfirmCleanTitle" text="Подтвердить очистку"/>
+<string id="SVCLRDialogConfirmCleanContent" text="Начать процесс очистки прямо сейчас?"/>
+<string id="SVCLRDialogConfirmWipeTitle" text="Подтвердить удаление {ADDON_NAME}"/>
+<string id="SVCLRDialogConfirmWipeContent" text="Начать процесс удаления прямо сейчас?"/>
+<string id="SVCLRCleanStarted" text="Очистка началась"/>
+<string id="SVCLRStatusCollecting" text="Сбор объектов..."/>
+<string id="SVCLRAddonCollectedCount" text="{ADDON} собрал {NUMBER} удаляемых объектов."/>
+<string id="SVCLRTotalCollectedCount" text="Всего собрано {NUMBER} удаляемых объектов."/>
+<string id="SVCLRNothingToClean" text="Нечего очищать."/>
+<string id="SVCLRErrorCollectingObjects" text="Ошибка при сборе объектов."/>
+<string id="SVCLRStatusBackup" text="Создание резервной копии сохранения..."/>
+<string id="SVCLRStatusFinalizing" text="Сохранение игры..."/>
+<string id="SVCLRStatusCounting" text="Подсчет результатов..."/>
+<string id="SVCLRCleanResults" text="Результаты очистки:"/>
+<string id="SVCLRStatusRemoving" text="Удаление объектов..."/>
+<string id="SVCLRCleanedObjectsCount" text="Очищено {NUMBER} объектов."/>
+<string id="SVCLRWipeFailed" text="Удаление не удалось!"/>
+<string id="SVCLRRemovingBackup" text="Удаление резервной копии сохранения..."/>
+<string id="SVCLRCleanComplete" text="Очистка завершена. Процесс занял {NUMBER} секунд."/>
+<string id="SVCLRCleanTerminated" text="Очистка прервана. Подробности см. в логах."/>
+<string id="SVCLRSuccessLoadReminder" text="Пожалуйста, загрузите сохранение перед продолжением игры: "/>
+<string id="SVCLRFailureLoadReminder" text="Пожалуйста, загрузите резервную копию сохранения перед продолжением игры: "/>
+<string id="SVCLRCompatibilityMode" text="Режим совместимости"/>
+<string id="SVCLRCompatibilityModeHint" text="Предотвращает удаление предметов из модов без дополнений."/>
+<string id="SVCLRFastCollectionMode" text="Быстрый режим сбора включен"/>
+<string id="SVCLRCompatibilityBlockCount" text="{NUMBER} удаляемых объектов были заблокированы в режиме совместимости."/>
+<string id="SVCLRCompatibilityTypeCount" text="[{DLL_FILE}] предотвратил удаление {NUMBER} [{TYPE_NAME}] в режиме совместимости."/>
+<string id="SVCLRStatusBackupTemp" text="Создание временного сохранения для сбора данных..."/>
+<string id="SVCLRIronmanBackupDone" text="Резервная копия Ironman успешно создана: {PATH}"/>
+<string id="SVCLRIronmanBackupError" text="Не удалось создать резервную копию Ironman."/>
+<string id="SVCLRFailureLoadReminder" text="Пожалуйста, загрузите резервную копию сохранения перед продолжением игры: "/>
+    </strings>
+</base>
