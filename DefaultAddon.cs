@@ -7,8 +7,10 @@ using HarmonyLib;
 using Microsoft.Extensions.Logging;
 using SaveCleaner.Utils;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.LogEntries;
+using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
@@ -28,7 +30,9 @@ internal static class DefaultAddon
             new SaveCleanerAddon.BoolSetting(Settings.RemoveAbandonedCraftedItems, "{=SVCLRRemoveAbandonedCraftedItems}Remove Abandoned Crafted Items",
                 "{=SVCLRRemoveAbandonedCraftedItemsHint}The game by default keeps all the crafted items even after they are disappeared.", 2, true),
             new SaveCleanerAddon.BoolSetting(Settings.RemoveCorruptedLogs, "{=SVCLRRemoveCorruptedLogs}Remove Corrupted Logs",
-                "{=SVCLRRemoveCorruptedLogs}Remove log entries that have important data missing, which may cause issues.", 2, true));
+                "{=SVCLRRemoveCorruptedLogsHint}Remove log entries that have important data missing, which may cause issues.", 2, true),
+            new SaveCleanerAddon.BoolSetting(Settings.RemoveGlitchedParties, "{=SVCLRRemoveGlitchedParties}(Beta) Remove Glitched Parties",
+                "{=SVCLRRemoveGlitchedPartiesHint}Remove parties that could crash the game likely due to mod uninstallations.", 2, false));
         addon.OnPreClean += OnPreClean;
         addon.OnPostClean += OnPostClean;
         addon.CanRemoveChild += CanRemoveChild;
@@ -103,6 +107,12 @@ internal static class DefaultAddon
         bool removed = false;
         object child = node.Value;
         object parent = node.Parent.Value;
+
+        if (child is MobileParty mobileParty)
+        {
+            return RemoveMobileParty(mobileParty, dryRun);
+        }
+
         if (parent.GetType().IsContainer(out ContainerType containerType))
         {
             return RemoveFromContainer(addon, node, containerType, dryRun);
@@ -116,6 +126,17 @@ internal static class DefaultAddon
         }
 
         return removed;
+    }
+
+    private static bool RemoveMobileParty(MobileParty mobileParty, bool dryRun)
+    {
+        if (!mobileParty.IsActive && !mobileParty.IsVisible && mobileParty.Ai?.IsDisabled != true) return true;
+        if (dryRun) return true;
+        mobileParty.MapEvent?.FinalizeEvent();
+        mobileParty.IsActive = false;
+        mobileParty.Ai?.DisableAi();
+        DestroyPartyAction.Apply(null, mobileParty);
+        return true;
     }
 
     private static bool RemoveFromContainer(SaveCleanerAddon addon, Node node, ContainerType containerType, bool dryRun)
@@ -191,8 +212,19 @@ internal static class DefaultAddon
             addon.Removable += RemoveAbandonedCraftedItems;
         if (addon.GetValue<bool>(Settings.RemoveCorruptedLogs))
             addon.Removable += RemoveCorruptedLogs;
+        if (addon.GetValue<bool>(Settings.RemoveGlitchedParties))
+            addon.Removable += RemoveGlitchedParties;
 
         return true;
+    }
+
+    private static bool RemoveGlitchedParties(SaveCleanerAddon addon, object obj)
+    {
+        if (obj is not MobileParty mobileParty) return false;
+        if (mobileParty.IsActive && mobileParty.IsVisible && mobileParty.PartyComponent is null) return true;
+        // fix crashes at TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors.AiPatrollingBehavior.AiHourlyTick
+        if (!mobileParty.IsMilitia && !mobileParty.IsCaravan && !mobileParty.IsVillager && !mobileParty.IsBandit && !mobileParty.IsDisbanding && mobileParty.MapFaction?.Leader is null) return true;
+        return false;
     }
 
     private static bool FillVault(SaveCleanerAddon addon)

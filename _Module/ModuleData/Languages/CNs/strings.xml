@@ -58,5 +58,9 @@
         <string id="SVCLRStatusBackupTemp" text="正在储存用于搜集资讯的暂存档案……"/>
         <string id="SVCLRIronmanBackupDone" text="直面人生模式存档备份成功: {PATH}"/>
         <string id="SVCLRIronmanBackupError" text="直面人生模式存档备份失败。"/>
+        <string id="SVCLRRemoveCorruptedLogs" text="移除损坏的记录"/>
+        <string id="SVCLRRemoveCorruptedLogsHint" text="移除有缺少必要资料而可能造成问题的记录文件"/>
+        <string id="SVCLRRemoveGlitchedParties" text="(Beta) 移除有问题的队伍"/>
+        <string id="SVCLRRemoveGlitchedPartiesHint" text="移除可能由于移除模组而残留下来并造成问题的队伍。"/>
     </strings>
 </base>

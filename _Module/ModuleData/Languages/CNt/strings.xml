@@ -58,5 +58,9 @@
         <string id="SVCLRStatusBackupTemp" text="正在儲存用於蒐集資訊的暫存檔案……"/>
         <string id="SVCLRIronmanBackupDone" text="鐵人模式存檔備份成功: {PATH}"/>
         <string id="SVCLRIronmanBackupError" text="鐵人模式存檔備份失敗。"/>
+        <string id="SVCLRRemoveCorruptedLogs" text="移除損壞的記錄"/>
+        <string id="SVCLRRemoveCorruptedLogsHint" text="移除有缺少必要資料而可能造成問題的記錄文件"/>
+        <string id="SVCLRRemoveGlitchedParties" text="(Beta) 移除有問題的隊伍"/>
+        <string id="SVCLRRemoveGlitchedPartiesHint" text="移除可能由於移除模組而殘留下來並造成問題的隊伍。"/>
     </strings>
 </base>

@@ -58,5 +58,9 @@
         <string id="SVCLRStatusBackupTemp" text="Creating temporary save for data collection..."/>
         <string id="SVCLRIronmanBackupDone" text="Ironman save backup successful: {PATH}"/>
         <string id="SVCLRIronmanBackupError" text="Failed to back up Ironman save."/>
+        <string id="SVCLRRemoveCorruptedLogs" text="Remove Corrupted Logs"/>
+        <string id="SVCLRRemoveCorruptedLogsHint" text="Remove log entries that have important data missing, which may cause issues."/>
+        <string id="SVCLRRemoveGlitchedParties" text="(Beta) Remove Glitched Parties"/>
+        <string id="SVCLRRemoveGlitchedPartiesHint" text="Remove parties that could crash the game likely due to mod uninstallations."/>
     </strings>
 </base>
