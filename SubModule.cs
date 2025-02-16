@@ -198,6 +198,7 @@ public class SubModule : MBSubModuleBase
 
     protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
     {
+        if (game.GameType is not Campaign) return;
         Campaign.Current.AddCampaignEventReceiver(SaveEventReceiver);
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,6 +10,7 @@ using SaveCleaner.Utils;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.Issues;
 using TaleWorlds.CampaignSystem.LogEntries;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
@@ -110,7 +112,40 @@ internal static class DefaultAddon
 
         if (child is MobileParty mobileParty)
         {
-            return RemoveMobileParty(mobileParty, dryRun);
+            if (mobileParty.Army is not null)
+            {
+                return false;
+            }
+
+            if (node.Top.Value is IssueBase) return false;
+
+            if (parent is MobilePartyAi ai && ai.MoveTargetParty == mobileParty)
+            {
+                try
+                {
+                    ai.SetMoveModeHold();
+                }
+                catch
+                {
+                    // in case ai._mobileParty was null
+                }
+
+                typeof(MobilePartyAi).Method("SetNavigationModeHold").Invoke(ai, null);
+                return true;
+            }
+
+            if (mobileParty.PartyComponent is not null && mobileParty.PartyComponent.MobileParty != mobileParty)
+            {
+                return true;
+            }
+
+            removed = RemoveMobileParty(mobileParty, dryRun);
+            if (!removed && !dryRun)
+            {
+                addon.PrintAncestry(mobileParty);
+            }
+
+            return removed;
         }
 
         if (parent.GetType().IsContainer(out ContainerType containerType))
@@ -130,7 +165,7 @@ internal static class DefaultAddon
 
     private static bool RemoveMobileParty(MobileParty mobileParty, bool dryRun)
     {
-        if (!mobileParty.IsActive && !mobileParty.IsVisible && mobileParty.Ai?.IsDisabled != true) return true;
+        if (!mobileParty.IsActive && !mobileParty.IsVisible && mobileParty.Ai?.IsDisabled != false) return true;
         if (dryRun) return true;
         mobileParty.MapEvent?.FinalizeEvent();
         mobileParty.IsActive = false;
@@ -150,28 +185,39 @@ internal static class DefaultAddon
             case ContainerType.CustomList:
             case ContainerType.CustomReadOnlyList:
             case ContainerType.List:
-                if (!dryRun) parentType.GetMethod("Remove")!.Invoke(parent, [child]);
-                removed = true;
-                break;
-            case ContainerType.Dictionary:
-                if (parentType.GenericTypeArguments.Length == 2 && parentType.GenericTypeArguments[0] == child.GetType())
+                if (parent is IList list)
                 {
-                    if (!dryRun) parentType.GetMethod("Remove")!.Invoke(parent, [child]);
+                    if (!dryRun)
+                    {
+                        list.Remove(child);
+                    }
+
                     removed = true;
                 }
 
                 break;
+            case ContainerType.Dictionary:
+                if (parentType.GenericTypeArguments.Length == 2 && parentType.GenericTypeArguments[0] == child.GetType())
+                {
+                    if (parent is IDictionary dictionary)
+                    {
+                        if (!dryRun) dictionary.Remove(child);
+                        removed = true;
+                    }
+                }
+
+                break;
             case ContainerType.Array:
-                if (parent is TroopRosterElement[] troopRosterElements)
+                if (parent is TroopRosterElement[] troopRosterElements && child is CharacterObject characterObject)
                 {
                     foreach (object rosterObject in addon.GetParents(troopRosterElements))
                     {
                         if (rosterObject is not TroopRoster roster) continue;
-                        if (roster.Contains((CharacterObject)child))
+                        if (roster.Contains(characterObject))
                         {
                             if (!dryRun)
                             {
-                                roster.RemoveTroop((CharacterObject)child);
+                                roster.RemoveTroop(characterObject);
                             }
                         }
                         else
@@ -220,11 +266,16 @@ internal static class DefaultAddon
 
     private static bool RemoveGlitchedParties(SaveCleanerAddon addon, object obj)
     {
-        if (obj is not MobileParty mobileParty) return false;
-        if (mobileParty.IsActive && mobileParty.IsVisible && mobileParty.PartyComponent is null) return true;
-        // fix crashes at TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors.AiPatrollingBehavior.AiHourlyTick
-        if (!mobileParty.IsMilitia && !mobileParty.IsCaravan && !mobileParty.IsVillager && !mobileParty.IsBandit && !mobileParty.IsDisbanding && mobileParty.MapFaction?.Leader is null) return true;
-        return false;
+        return obj switch
+        {
+            MobileParty mobileParty when mobileParty.Party?.MobileParty != mobileParty => true,
+            MobileParty { PartyComponent: not null } mobileParty when mobileParty.PartyComponent.MobileParty != mobileParty => true,
+            MobileParty { IsActive: true, IsVisible: true, PartyComponent: null } => true,
+            // fix crashes at TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors.AiPatrollingBehavior.AiHourlyTick
+            MobileParty { IsMilitia: false, IsCaravan: false, IsVillager: false, IsBandit: false, IsDisbanding: false } mobileParty when mobileParty.MapFaction?.Leader is null => true,
+            Army army when army.Parties.Count == 0 => true,
+            _ => false
+        };
     }
 
     private static bool FillVault(SaveCleanerAddon addon)

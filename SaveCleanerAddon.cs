@@ -117,7 +117,7 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
     public IEnumerable<object> GetAllParents(object obj, int depth = -1)
     {
         if (_cleaner is null) throw new NullReferenceException("No cleaner available.");
-        yield return _cleaner.GetAllParents(obj, depth, []);
+        return _cleaner.GetAllParents(obj, depth, []);
     }
 
     /// <summary>
@@ -214,6 +214,16 @@ public sealed class SaveCleanerAddon(string id, string name, params SaveCleanerA
     public void AddSupportedNamespace(Regex namespaceRegex)
     {
         SupportedNamespaceRegexes.Add(namespaceRegex);
+    }
+
+    /// <summary>
+    /// Print the ancestry of the <paramref name="obj"/> to the log file.
+    /// </summary>
+    /// <param name="obj"></param>
+    public void PrintAncestry(object obj)
+    {
+        if (_cleaner is null) throw new NullReferenceException("No cleaner available.");
+        _cleaner.PrintAncestry(obj);
     }
 
     internal bool IsRemovable(object o)

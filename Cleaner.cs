@@ -1,8 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using Bannerlord.ButterLib.Logger.Extensions;
 using HarmonyLib;
@@ -186,7 +188,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
 
                 Node node = new(obj) { Parent = new Node(parent) };
 
-                while (ns == "System" || ns.StartsWith("System.") || node.Top.Value.GetType().IsArray)
+                while (ns == "System" || ns.StartsWith("System.") || node.Top.Value.GetType().IsContainer())
                 {
                     if (_collector.ParentMap.TryGetValue(node.Top.Value, out var grandparents))
                     {
@@ -214,11 +216,15 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
                 var matches = _domainHandlers.Where(tuple => tuple.Item1.IsMatch(ns)).ToListQ();
                 if (matches.Any())
                 {
+                    failed = true;
                     foreach (var tuple in from tuple in matches let result = tuple.Item2.InvokeCanRemoveChild(node) where result select tuple)
                     {
                         newHandlers.Add(node, tuple.Item2);
+                        failed = false;
                         break;
                     }
+
+                    if (failed) break;
                 }
                 else if (!GlobalOptions.CompatibilityMode)
                 {
@@ -416,6 +422,80 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
                 LogLevel.Error, ex);
             OnError();
         }
+    }
+
+    public void PrintAncestry(object obj)
+    {
+        _logger.LogDebug($"Ancestry of {obj}:");
+        try
+        {
+            InternalPrintAncestry([obj], "");
+        }
+        catch (OverflowException ex)
+        {
+            _logger.LogError("Ancestry of {obj} is too big.", obj);
+        }
+    }
+
+    private void InternalPrintAncestry(object[] history, string str)
+    {
+        object obj = history[history.Length - 1];
+        Type type = obj.GetType();
+        if (history.Length > 1)
+        {
+            object last = history[history.Length - 2];
+            foreach (FieldInfo field in type.GetAllFields())
+            {
+                if (field.GetValue(obj) != last) continue;
+                str += $" {{{field.Name}}}";
+                break;
+            }
+
+            str += " <- ";
+        }
+
+        str += $"[{type.Name}]";
+        try
+        {
+            if (obj is IDictionary dictionary && history.Length > 1)
+            {
+                object last = history[history.Length - 2];
+                foreach (DictionaryEntry entry in dictionary)
+                {
+                    if (entry.Key != last && entry.Value != last) continue;
+                    if (entry.Key == obj) str += " \"{SELF}\"";
+                    else str += $" \"{entry.Key}\"";
+                }
+            }
+            else if (!type.IsContainer())
+            {
+                str += $" {obj}";
+            }
+        }
+        catch (Exception e)
+        {
+            str += $" ({e.GetType().Name})";
+        }
+
+        bool isTop = true;
+        if (GetParents(obj) is HashSet<object> parents)
+        {
+            if (history.Length <= 100)
+            {
+                foreach (object parent in parents.Where(parent => !history.Contains(parent)))
+                {
+                    isTop = false;
+                    InternalPrintAncestry([..history, parent], str);
+                }
+            }
+            else
+            {
+                throw new OverflowException("LIMIT REACHED!!!");
+            }
+        }
+
+        if (!isTop) return;
+        _logger.LogDebug(str);
     }
 
     private void RemoveDependenciesFromRemovables(object obj)
