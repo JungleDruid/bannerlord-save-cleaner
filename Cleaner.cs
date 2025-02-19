@@ -16,6 +16,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
+using TaleWorlds.MountAndBlade;
 using TaleWorlds.SaveSystem;
 
 namespace SaveCleaner;
@@ -46,6 +47,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
     private readonly Dictionary<Node, SaveCleanerAddon> _removalHandlers = [];
     private readonly HashSet<object> _failedRemovals = [];
     private bool _isCreatingTempSave;
+    private bool _stopGameOnFocusLost;
 
     public bool Completed => _state == CleanerState.Complete && _detailState == DetailState.Ended;
 
@@ -67,6 +69,9 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
 
         _stopwatch = new Stopwatch();
         _stopwatch.Start();
+
+        _stopGameOnFocusLost = BannerlordConfig.StopGameOnFocusLost;
+        BannerlordConfig.StopGameOnFocusLost = false;
 
         mapView.SetActive(true);
         mapView.SetText(new TextObject("{=SVCLRCleanStarted}Clean Started"));
@@ -431,7 +436,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         {
             InternalPrintAncestry([obj], "");
         }
-        catch (OverflowException ex)
+        catch (OverflowException)
         {
             _logger.LogError("Ancestry of {obj} is too big.", obj);
         }
@@ -626,30 +631,38 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
 
     public void CleanerTick()
     {
-        switch (_state)
+        try
         {
-            case CleanerState.None:
-                break;
-            case CleanerState.BackingUp:
-                BackingUp();
-                break;
-            case CleanerState.Collecting:
-                Collecting();
-                break;
-            case CleanerState.Removing:
-                Removing();
-                break;
-            case CleanerState.Counting:
-                Counting();
-                break;
-            case CleanerState.Finalizing:
-                Finalizing();
-                break;
-            case CleanerState.Complete:
-                OnComplete();
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            switch (_state)
+            {
+                case CleanerState.None:
+                    break;
+                case CleanerState.BackingUp:
+                    BackingUp();
+                    break;
+                case CleanerState.Collecting:
+                    Collecting();
+                    break;
+                case CleanerState.Removing:
+                    Removing();
+                    break;
+                case CleanerState.Counting:
+                    Counting();
+                    break;
+                case CleanerState.Finalizing:
+                    Finalizing();
+                    break;
+                case CleanerState.Complete:
+                    OnComplete();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while cleaning.");
+            OnError();
         }
     }
 
@@ -817,6 +830,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         }
 
         mapView.SetActive(false);
+        BannerlordConfig.StopGameOnFocusLost = _stopGameOnFocusLost;
         FinishState();
     }
 
@@ -836,6 +850,7 @@ internal class Cleaner(CleanerMapView mapView, IReadOnlyList<SaveCleanerAddon> a
         }
 
         mapView.SetActive(false);
+        BannerlordConfig.StopGameOnFocusLost = _stopGameOnFocusLost;
         FinishState();
     }
 
