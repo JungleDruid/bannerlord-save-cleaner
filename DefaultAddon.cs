@@ -13,6 +13,7 @@ using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Issues;
 using TaleWorlds.CampaignSystem.LogEntries;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
@@ -165,6 +166,7 @@ internal static class DefaultAddon
 
     private static bool RemoveMobileParty(MobileParty mobileParty, bool dryRun)
     {
+        if (mobileParty.PartyComponent is WarPartyComponent { Clan: null }) return false;
         if (!mobileParty.IsActive && !mobileParty.IsVisible && mobileParty.Ai?.IsDisabled != false) return true;
         if (dryRun) return true;
         mobileParty.MapEvent?.FinalizeEvent();
